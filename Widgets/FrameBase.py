@@ -1,6 +1,6 @@
 from tkinter import Canvas
 from typing import Union
-from customtkinter import CTkFrame
+from customtkinter import CTkFrame, CTkToplevel
 from Widgets.Enums.ColorEnum import ColorEnum
 
 class FrameBase(CTkFrame):
@@ -9,7 +9,7 @@ class FrameBase(CTkFrame):
     """
     def __init__(self,
                  *args,
-                 master: Union[CTkFrame, Canvas],
+                 master: Union[CTkFrame, Canvas, CTkToplevel],
                  fg_color: Union[str, ColorEnum] = 'white',
                  border_color: Union[str, ColorEnum] = ColorEnum.MXB_RED,
                  border_width: int = 2,
