@@ -3,6 +3,9 @@ from customtkinter import CTkToplevel
 from Widgets import LabelBase, ButtonBase, FrameBase
 
 class SuccessHandler(CTkToplevel):
+    """
+    Used to initialize a window indicating a success of the underlying script, carrying a default success message
+    """
     def __init__(self):
         super().__init__()
         self.title("Úspěch!")

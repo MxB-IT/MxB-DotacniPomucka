@@ -2,7 +2,7 @@ from tkinter import Canvas
 from typing import Union
 from customtkinter import CTkLabel, CTkFrame
 
-from Widgets.Enums.ColorEnum import ColorEnum
+from Enums import ColorEnum
 
 
 class LabelBase(CTkLabel):
