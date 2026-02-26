@@ -12,7 +12,7 @@ class Dotacovatko(CTk):
     """
     def __init__(self):
         super().__init__()
-        self.excel_processor = ExcelProcessor()
+        self._excel_processor = ExcelProcessor()
 
         self.title("Dotační můstek")
 
@@ -22,21 +22,21 @@ class Dotacovatko(CTk):
 
         self._widgets = list()
 
-        self.input_widgets = (ButtonBase(master=self._frame,
-                                         command=self.open_input,
-                                         text="Načíst vstupní tabulku"),
-                           LabelBase(master=self._frame,
+        self._input_widgets = (ButtonBase(master=self._frame,
+                                          command=self.open_input,
+                                          text="Načíst vstupní tabulku"),
+                               LabelBase(master=self._frame,
                                      text="Nebyla načtena žádná vstupní tabulka",
                                      text_color="red"))
-        self._widgets.append(self.input_widgets)
+        self._widgets.append(self._input_widgets)
 
-        self.output_widgets = (ButtonBase(master=self._frame,
-                                          command=self.choose_output_folder,
-                                          text="Zvolit složku pro uložení výsledného souboru"),
-                               LabelBase(master=self._frame,
+        self._output_widgets = (ButtonBase(master=self._frame,
+                                           command=self.choose_output_folder,
+                                           text="Zvolit složku pro uložení výsledného souboru"),
+                                LabelBase(master=self._frame,
                                          text=f"Složka pro uložení výsledného souboru: {str(os.getcwd().split(SeparatorGetter.get_separator(os.getcwd()))[-1])}",
                                          text_color="green"))
-        self._widgets.append(self.output_widgets)
+        self._widgets.append(self._output_widgets)
         self.arrange_widgets()
 
     def arrange_widgets(self) -> None:
@@ -65,11 +65,11 @@ class Dotacovatko(CTk):
                                                initialdir=os.getcwd())
 
         if file_path:
-            if self.excel_processor.set_input(file_path):
-                self.input_widgets[1].configure(text=f"Soubor {str(file_path.split(SeparatorGetter.get_separator(file_path))[-1])} úspěšně načten.",
-                                                text_color="green")
+            if self._excel_processor.set_input(file_path):
+                self._input_widgets[1].configure(text=f"Soubor {str(file_path.split(SeparatorGetter.get_separator(file_path))[-1])} úspěšně načten.",
+                                                 text_color="green")
             else:
-                self.input_widgets[1].configure(
+                self._input_widgets[1].configure(
                     text=f"Chyba při otevírání Excel souboru na vstup.",
                     text_color="red")
 
@@ -81,12 +81,12 @@ class Dotacovatko(CTk):
         directory_path = filedialog.askdirectory(initialdir=os.getcwd())
 
         if directory_path:
-            if self.excel_processor.set_output_directory(directory_path):
-                self.output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: {str(directory_path.split(SeparatorGetter.get_separator(directory_path))[-1])}",
-                                                 text_color="green")
+            if self._excel_processor.set_output_directory(directory_path):
+                self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: {str(directory_path.split(SeparatorGetter.get_separator(directory_path))[-1])}",
+                                                  text_color="green")
             else:
-                self.output_widgets[1].configure(text=f"Chyba při načítání složky pro výstup.",
-                                                 text_color="red")
+                self._output_widgets[1].configure(text=f"Chyba při načítání složky pro výstup.",
+                                                  text_color="red")
 
 if __name__ == '__main__':
     app = Dotacovatko()
