@@ -1,3 +1,5 @@
+import tempfile
+import time
 import requests
 import os
 
@@ -12,7 +14,31 @@ class TemplateManager:
     """
     def __init__(self, template_url, target_path):
         self.url = template_url
-        self.path = target_path
+        self.app_name = 'Dotacovatko'
+        self.path = self._get_writable_path()
+
+    def _get_writable_path(self) -> str:
+        """
+        this method finds the best place to store the template file, it goes APPPDATA -> Documents -> system temp
+        :return: filepath which will be written into
+        """
+        appdata = os.path.join(os.environ.get('LOCALAPPDATA', ''), self.app_name)
+        documents = os.path.join(os.path.expanduser('~'), "Documents", self.app_name)
+        system_temp = os.path.join(tempfile.gettempdir(), self.app_name)
+
+        for path in [appdata, documents, system_temp]:
+            try:
+                os.makedirs(path)
+                test_file = os.path.join(path, 'permsTest')
+                with open(test_file, "w") as f:
+                    f.write('test')
+                os.remove(test_file)
+
+                return os.path.join(path, f"MPSV_Template_{time.strftime('%Y')}.xlsx")
+            except (OSError, IOError) as e:
+                continue
+
+        raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a uložit Excel MPSV")
 
     def is_template_ready(self) -> bool:
         """
