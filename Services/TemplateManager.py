@@ -12,19 +12,19 @@ class TemplateManager:
     This class handles downloading the template for the output Excel sheet, if it has already been downloaded previously,
     it does not download anything, using the already downloaded file
     """
-    def __init__(self, template_url, target_path):
-        self.url = template_url
-        self.app_name = 'Dotacovatko'
+    def __init__(self, template_url: str) -> None:
+        self._url = template_url
+        self._app_name = 'Dotacovatko'
         self.path = self._get_writable_path()
 
     def _get_writable_path(self) -> str:
         """
-        this method finds the best place to store the template file, it goes APPPDATA -> Documents -> system temp
+        This method finds the best place to store the template file, it goes APPPDATA -> Documents -> system temp
         :return: filepath which will be written into
         """
-        appdata = os.path.join(os.environ.get('LOCALAPPDATA', ''), self.app_name)
-        documents = os.path.join(os.path.expanduser('~'), "Documents", self.app_name)
-        system_temp = os.path.join(tempfile.gettempdir(), self.app_name)
+        appdata = os.path.join(os.environ.get('LOCALAPPDATA', ''), self._app_name)
+        documents = os.path.join(os.path.expanduser('~'), "Documents", self._app_name)
+        system_temp = os.path.join(tempfile.gettempdir(), self._app_name)
 
         for path in [appdata, documents, system_temp]:
             try:
@@ -38,7 +38,7 @@ class TemplateManager:
             except (OSError, IOError) as e:
                 continue
 
-        raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a uložit Excel MPSV")
+        raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a uložit Excel MPSV.")
 
     def is_template_ready(self) -> bool:
         """
@@ -53,7 +53,7 @@ class TemplateManager:
         :return: True is the download succeeds, false otherwise
         """
         try:
-            response = requests.get(self.url)
+            response = requests.get(self._url)
             response.raise_for_status()
 
             with open(self.path, "wb") as file:
