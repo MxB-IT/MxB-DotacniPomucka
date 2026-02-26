@@ -20,7 +20,6 @@ class ExcelProcessor:
         """
         try:
             self.file_path = file_path
-            print("input set")
             return True
         except Exception as e:
             ErrorHandler(error_code=ErrNoEnum.ERR_OPENING_EXCEL,
@@ -37,7 +36,6 @@ class ExcelProcessor:
         """
         try:
             self.output_directory = output_directory
-            print("output set")
             return True
         except Exception as e:
             ErrorHandler(error_code=ErrNoEnum.ERR_SELECTING_OUTPUT,
