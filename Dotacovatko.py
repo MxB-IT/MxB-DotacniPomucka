@@ -1,10 +1,12 @@
 from Services import ExcelProcessor
 from Utils.SeparatorGetter import SeparatorGetter
-from Widgets import ButtonBase, LabelBase, FrameBase
+from Widgets import ButtonBase, LabelBase, FrameBase, ProgressBarBase
 
 import os
+import threading
 from tkinter import filedialog
-from customtkinter import CTk
+from customtkinter import CTk, CTkProgressBar
+
 
 class Dotacovatko(CTk):
     """
@@ -20,26 +22,37 @@ class Dotacovatko(CTk):
 
         self._frame.pack(fill="both", expand=True)
 
+        self._progress_bar = ProgressBarBase(master=self._frame,
+                                             mode="indeterminate")
+
         self._widgets = list()
 
         self._input_widgets = (ButtonBase(master=self._frame,
-                                          command=self.open_input,
+                                          command=self._open_input,
                                           text="Načíst vstupní tabulku"),
                                LabelBase(master=self._frame,
-                                     text="Nebyla načtena žádná vstupní tabulka",
-                                     text_color="red"))
+                                         text="Nebyla načtena žádná vstupní tabulka",
+                                         text_color="red"))
         self._widgets.append(self._input_widgets)
 
         self._output_widgets = (ButtonBase(master=self._frame,
-                                           command=self.choose_output_folder,
+                                           command=self._choose_output_folder,
                                            text="Zvolit složku pro uložení výsledného souboru"),
                                 LabelBase(master=self._frame,
-                                         text=f"Složka pro uložení výsledného souboru: {str(os.getcwd().split(SeparatorGetter.get_separator(os.getcwd()))[-1])}",
-                                         text_color="green"))
+                                          text=f"Složka pro uložení výsledného souboru: {str(os.getcwd().split(SeparatorGetter.get_separator(os.getcwd()))[-1])}",
+                                          text_color="green"))
         self._widgets.append(self._output_widgets)
-        self.arrange_widgets()
 
-    def arrange_widgets(self) -> None:
+        self._start_widgets = (ButtonBase(master=self._frame,
+                                          command=self._threaded_start,
+                                          text='Start'),
+                               LabelBase(master=self._frame,
+                                         text=''))
+        self._widgets.append(self._start_widgets)
+
+        self._arrange_widgets()
+
+    def _arrange_widgets(self) -> None:
         """
         arranges widgets into a grid layout within the app's frame, uses the private variables self._widgets and self._frame
         :return: None
@@ -55,7 +68,7 @@ class Dotacovatko(CTk):
             self._frame.rowconfigure(index=i,
                                      weight=1)
 
-    def open_input(self) -> None:
+    def _open_input(self) -> None:
         """
         lets the user choose an Excel file to open and passes it to the ExcelProcessor
         :return: None
@@ -73,7 +86,7 @@ class Dotacovatko(CTk):
                     text=f"Chyba při otevírání Excel souboru na vstup.",
                     text_color="red")
 
-    def choose_output_folder(self) -> None:
+    def _choose_output_folder(self) -> None:
         """
         Lets the user choose an output folder for the processed Excel file, sets it up in the ExcelProcessor
         :return: None
@@ -87,6 +100,29 @@ class Dotacovatko(CTk):
             else:
                 self._output_widgets[1].configure(text=f"Chyba při načítání složky pro výstup.",
                                                   text_color="red")
+
+    def _threaded_start(self) -> None:
+        self._start_widgets[1].configure(text="")
+        self.update_idletasks(),
+        self._progress_bar.grid(row=self._start_widgets[1].grid_info()['row'],
+                                column=self._start_widgets[1].grid_info()['column'])
+
+        progressbar_thread = threading.Thread(target=CTkProgressBar.start,
+                                              args=(self._progress_bar,))
+        progressbar_thread.start()
+
+        background_thread = threading.Thread(target=self._bg_processing, daemon=True)
+        background_thread.start()
+
+    def _bg_processing(self) -> None:
+        download = self._excel_processor.load_template()
+        if not download:
+            self._progress_bar.stop()
+            self._progress_bar.grid_forget()
+
+            self._start_widgets[1].configure(text="Chyba během stahování šablony MPSV.",
+                                             text_color="red")
+            return
 
 if __name__ == '__main__':
     app = Dotacovatko()

@@ -59,3 +59,18 @@ class ExcelProcessor:
 
         if not template_manager.download_template():
             raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte připojení k internetu a zkuste to prosím znovu.")
+
+        self.template = pd.read_excel(io=template_manager.path,
+                                      header=[10, 11],
+                                      thousands='.',
+                                      decimal=',',
+                                      sheet_name=None,
+                                      engine="openpyxl")
+
+        with open('output.txt', 'w', encoding='utf-8') as f:
+            sheet_names = list(self.template.keys())
+            f.write(f'Sheet name: {sheet_names[1]}')
+            f.write("-" * 30 + '\n')
+            f.write(self.template[sheet_names[1]].to_string())
+
+        return True

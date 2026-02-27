@@ -1,7 +1,11 @@
 import tempfile
 import time
+import zipfile
+import re
+
 import requests
 import os
+from openpyxl import load_workbook
 
 from Enums import ErrNoEnum
 from Utils.ErrorHandler import ErrorHandler
@@ -28,7 +32,7 @@ class TemplateManager:
 
         for path in [appdata, documents, system_temp]:
             try:
-                os.makedirs(path)
+                os.makedirs(path, exist_ok=True)
                 test_file = os.path.join(path, 'permsTest')
                 with open(test_file, "w") as f:
                     f.write('test')
@@ -40,7 +44,7 @@ class TemplateManager:
 
         raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a uložit Excel MPSV.")
 
-    def is_template_ready(self) -> bool:
+    def _is_template_ready(self) -> bool:
         """
         Checks whether the template has already been downloaded
         :return: True if it has already been downloaded, False otherwise
@@ -50,16 +54,54 @@ class TemplateManager:
     def download_template(self) -> bool:
         """
         Downloads the template file from the URL and stores it in the specified filepath
-        :return: True is the download succeeds, false otherwise
+        :return: True if the download succeeds, false otherwise
         """
+        if self._is_template_ready():
+            self._scrub_template()
+            return True
+
         try:
             response = requests.get(self._url)
             response.raise_for_status()
 
             with open(self.path, "wb") as file:
                 file.write(response.content)
+
+            if not self._scrub_template():
+                return False
+
             return True
 
         except Exception as e:
-            ErrorHandler(error_code= ErrNoEnum.ERR_FAILED_TO_DOWNLOAD, error_message="Chyba při načítání šablony, zkuste to prosím znovu")
+            ErrorHandler(error_code= ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                         error_message="Chyba při načítání šablony, zkuste to prosím znovu")
+            return False
+
+    def _scrub_template(self) -> bool:
+        temp_file = self.path + ".tmp"
+        print("in")
+
+        try:
+            with zipfile.ZipFile(self.path, "r") as zin:
+                with zipfile.ZipFile(temp_file, "w") as zout:
+                    for item in zin.infolist():
+                        data = zin.read(item.filename)
+
+                        if item.filename == 'xl/workbook.xml':
+                            xml_content = data.decode('utf-8')
+                            xml_content = re.sub(r'<definedNames>.*?</definedNames>', '', xml_content, flags=re.DOTALL)
+                            data = xml_content.encode('utf-8')
+
+                        zout.writestr(item, data)
+
+            os.replace(temp_file, self.path)
+            print("scrubbed")
+            return True
+        except Exception as e:
+            print("failed")
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
+            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                         error_message="Chyba při načítání šablony, zkuste to prosím znovu")
             return False
