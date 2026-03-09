@@ -2,6 +2,7 @@ import tempfile
 import time
 import zipfile
 import re
+from typing import Tuple
 
 import requests
 import os
@@ -69,7 +70,6 @@ class TemplateManager:
 
             if not self._scrub_template():
                 return False
-
             return True
 
         except Exception as e:
@@ -78,8 +78,11 @@ class TemplateManager:
             return False
 
     def _scrub_template(self) -> bool:
+        """
+        Removes certain metadata from the template that caused an error when opening
+        :return: bool indicating success or failure
+        """
         temp_file = self.path + ".tmp"
-        print("in")
 
         try:
             with zipfile.ZipFile(self.path, "r") as zin:
@@ -95,13 +98,34 @@ class TemplateManager:
                         zout.writestr(item, data)
 
             os.replace(temp_file, self.path)
-            print("scrubbed")
             return True
         except Exception as e:
-            print("failed")
             if os.path.exists(temp_file):
                 os.remove(temp_file)
 
             ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
                          error_message="Chyba při načítání šablony, zkuste to prosím znovu")
             return False
+
+    def update_template_cell(self, sheet_name: str, cell_coord: Tuple[int, int], value: str) -> bool:
+        """
+        Updates a specific cell inside an existing Excel file without deleting everything in it
+        :param sheet_name: name of the sheet the cell is in
+        :param cell_coord: coordinates of the cell
+        :param value: value to write into the cell
+        :return:
+        """
+        wb = load_workbook(self.path)
+        ws = wb[sheet_name]
+
+        ws[cell_coord].value = value
+
+        try:
+            wb.save(self.path)
+        except (OSError, IOError) as e:
+            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_SAVE,
+                         error_message="Upravený soubor se nepodařilo uložit, ujistěte se, že jej nemáte nikde otevřený a zkuste to prosím znovu.")
+            return False
+
+        wb.close()
+        return True
