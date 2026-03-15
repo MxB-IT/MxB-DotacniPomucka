@@ -2,7 +2,7 @@ from tkinter import Canvas
 from typing import Union
 from customtkinter import CTkFrame, CTkToplevel
 
-from Enums import ColorEnum
+from src.Enums import ColorEnum
 
 class FrameBase(CTkFrame):
     """

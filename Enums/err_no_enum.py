@@ -1,8 +1,0 @@
-from enum import IntEnum
-
-class ErrNoEnum(IntEnum):
-    ERR_OPENING_EXCEL = 401
-    ERR_SELECTING_OUTPUT = 402
-    ERR_FAILED_TO_DOWNLOAD = 403
-    ERR_FAILED_TO_SAVE = 404
-    ERR_WORKING_WITH_EXCEL = 405

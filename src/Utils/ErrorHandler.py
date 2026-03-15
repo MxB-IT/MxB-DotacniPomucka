@@ -1,7 +1,7 @@
 from tkinter.constants import BOTH
 
 from customtkinter import CTkToplevel
-from Widgets import ButtonBase, LabelBase, FrameBase
+from src.Widgets import ButtonBase, LabelBase, FrameBase
 
 class ErrorHandler(CTkToplevel):
     def __init__(self,

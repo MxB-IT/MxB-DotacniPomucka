@@ -1,6 +1,6 @@
 from tkinter.constants import BOTH
 from customtkinter import CTkToplevel
-from Widgets import LabelBase, ButtonBase, FrameBase
+from src.Widgets import LabelBase, ButtonBase, FrameBase
 
 class SuccessHandler(CTkToplevel):
     """

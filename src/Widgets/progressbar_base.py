@@ -1,5 +1,5 @@
 from customtkinter import CTkProgressBar
-from Enums import ColorEnum
+from src.Enums import ColorEnum
 
 class ProgressBarBase(CTkProgressBar):
     """

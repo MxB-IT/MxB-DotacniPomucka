@@ -1,6 +1,6 @@
 from customtkinter import CTkButton
 
-from Enums import ColorEnum
+from src.Enums import ColorEnum
 class ButtonBase(CTkButton):
     """
     class containing the base for all the GUI buttons, inherits from CTkButton

@@ -1,8 +1,13 @@
+"""
+This module defines an enum with all the czech month names, this is needed, because the Excel
+sheets the application will be working with both contain exclusively Czech text
+"""
 from enum import StrEnum
+
 
 class MonthEnum(StrEnum):
     """
-    contains an enum of czech names for months
+    Contains a mapping of sorts for translating English month names into Czech
     """
     JAN = "Leden",
     FEB = "Únor",

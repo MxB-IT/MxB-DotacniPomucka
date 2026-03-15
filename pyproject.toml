@@ -1,0 +1,83 @@
+[project]
+name = "Dotacovatko"
+version = "1.0.0"
+description = "A tool to help create tables for the ministry of internal affairs of the Czech Republic"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pydantic~=2.12.5"
+]
+
+[dependency-groups]
+dev = [
+    "mypy~=1.19.1",
+    "ruff~=0.14.4"
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+pretty = true
+show_error_context = true
+show_column_numbers = true
+show_error_codes = true
+explicit_package_bases = true
+mypy_path = "src"
+plugins = [
+    "pydantic.mypy"
+]
+
+[tool.ruff]
+src = ["src"]
+line-length = 99
+target-version = "py314"
+show-fixes = true
+output-format = "full"
+
+[tool.ruff.lint]
+select = [
+    "A",
+    "BLE001",
+    "B",
+    "C4",
+    "C90",
+    "DTZ",
+    "D100",
+    "D101",
+    "D102",
+    "D206",
+    "D207",
+    "D208",
+    "D209",
+    "D210",
+    "E",
+    "EXE",
+    "FIX",
+    "F",
+    "ISC",
+    "I",
+    "INP",
+    "LOG",
+    "N",
+    "PERF",
+    "PTH",
+    "PIE",
+    "Q",
+    "RUF",
+    "RET",
+    "S",
+    "SIM",
+    "UP",
+    "W"
+]
+
+ignore = [
+    "S101",
+    "RUF003"
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = 79

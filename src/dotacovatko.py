@@ -1,4 +1,4 @@
-from Services import ExcelProcessor
+from src.Services import ExcelProcessor
 from Utils.SeparatorGetter import SeparatorGetter
 from Widgets import ButtonBase, LabelBase, FrameBase, ProgressBarBase
 
@@ -123,6 +123,8 @@ class Dotacovatko(CTk):
             self._start_widgets[1].configure(text="Chyba během stahování šablony MPSV.",
                                              text_color="red")
             return
+
+        data_load = self._excel_processor.load_data()
 
 if __name__ == '__main__':
     app = Dotacovatko()
