@@ -7,7 +7,7 @@ import pandas as pd
 
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Services.template_manager import TemplateManager
-from src.Utils.ErrorHandler import ErrorHandler
+from src.Utils.error_handler import ErrorHandler
 
 
 class ExcelProcessor:
@@ -23,14 +23,14 @@ class ExcelProcessor:
         self.template_intro_sheet = None
         self.template_employee_sheet = None
 
-    def set_input(self, file_path: str) -> None:
+    def set_input(self, file_path: Path) -> None:
         """
         This method sets the filepath to the input Excel file.
         :return: True if successful, False otherwise
         """
         self.file_path = file_path
 
-    def set_output_directory(self, output_directory: str) -> None:
+    def set_output_directory(self, output_directory: Path) -> None:
         """
         This method attempts to set the output directory for the modified Excel file
         :param output_directory: string indicating the filepath to the output directory

@@ -1,6 +1,12 @@
+"""
+This module defines the ButtonBase used to define the basic characteristics of every single button
+that will be used in the app GUI
+"""
 from customtkinter import CTkButton
 
 from src.Enums import ColorEnum
+
+
 class ButtonBase(CTkButton):
     """
     class containing the base for all the GUI buttons, inherits from CTkButton

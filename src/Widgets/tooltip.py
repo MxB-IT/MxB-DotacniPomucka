@@ -1,4 +1,9 @@
-from customtkinter import CTkToplevel, CTkLabel
+"""
+This module defines the Tooltip class used to define how tooltips should behave and look within the
+GUI of the app
+"""
+from customtkinter import CTkLabel, CTkToplevel
+
 
 class Tooltip:
     """
@@ -9,7 +14,8 @@ class Tooltip:
                  text: str,
                  delay: int = 500):
         """
-        initializer for the Tooltip class, sets up all the private properties and binds the appropriate actions
+        initializer for the Tooltip class, sets up all the private properties and binds the
+        appropriate actions
         :param widget: widget for which the tooltip will be shown
         :param text: text the tooltip will display
         :param delay: delay after which the tooltip will appear (in ms)
@@ -26,14 +32,16 @@ class Tooltip:
 
     def _schedule_tooltip(self) -> None:
         """
-        method used for scheduling a tooltip to show itself, called whenever a user mouses over the appropriate widget
+        method used for scheduling a tooltip to show itself, called whenever a user mouses over the
+        appropriate widget
         :return: None
         """
         self._id = self._widget.after(self._delay, self._show_tooltip)
 
     def _show_tooltip(self) -> None:
         """
-        method used to calculate the size of the tooltip and its position relative to the parent widget
+        method used to calculate the size of the tooltip and its position relative to the parent
+        widget
         :return: None
         """
         x = self._widget.winfo_rootx() + 20

@@ -1,8 +1,13 @@
+"""
+This module defines the FrameBase that defines the basic characteristics of every single ctkFrame
+that will be used within the app GUI
+"""
 from tkinter import Canvas
-from typing import Union
+
 from customtkinter import CTkFrame, CTkToplevel
 
 from src.Enums import ColorEnum
+
 
 class FrameBase(CTkFrame):
     """
@@ -10,13 +15,14 @@ class FrameBase(CTkFrame):
     """
     def __init__(self,
                  *args,
-                 master: Union[CTkFrame, Canvas, CTkToplevel],
-                 fg_color: Union[str, ColorEnum] = 'white',
-                 border_color: Union[str, ColorEnum] = ColorEnum.MXB_RED,
+                 master: CTkFrame | Canvas | CTkToplevel,
+                 fg_color: str | ColorEnum = "white",
+                 border_color: str | ColorEnum = ColorEnum.MXB_RED,
                  border_width: int = 2,
                  **kwargs):
         """
-        initialization method used whenever a new Frame needs to be intialized, passes all arguments to the super initializer
+        initialization method used whenever a new Frame needs to be intialized, passes all
+        arguments to the super initializer
         :param args: any non-keyword arguments
         :param master: master of the Frame
         :param fg_color: color of the Frame

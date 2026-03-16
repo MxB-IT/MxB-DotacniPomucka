@@ -1,11 +1,15 @@
-from src.Services import ExcelProcessor
-from Utils.SeparatorGetter import SeparatorGetter
-from Widgets import ButtonBase, LabelBase, FrameBase, ProgressBarBase
-
-import os
+"""
+This module defines the main Dotacovatko class containing all the overall app logic for rendering
+its window and for managing the invocation of all methods needed for its functionality
+"""
 import threading
+from pathlib import Path
 from tkinter import filedialog
+
 from customtkinter import CTk, CTkProgressBar
+
+from src.Services import ExcelProcessor
+from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 
 class Dotacovatko(CTk):
@@ -25,7 +29,7 @@ class Dotacovatko(CTk):
         self._progress_bar = ProgressBarBase(master=self._frame,
                                              mode="indeterminate")
 
-        self._widgets = list()
+        self._widgets = []
 
         self._input_widgets = (ButtonBase(master=self._frame,
                                           command=self._open_input,
@@ -39,22 +43,24 @@ class Dotacovatko(CTk):
                                            command=self._choose_output_folder,
                                            text="Zvolit složku pro uložení výsledného souboru"),
                                 LabelBase(master=self._frame,
-                                          text=f"Složka pro uložení výsledného souboru: {str(os.getcwd().split(SeparatorGetter.get_separator(os.getcwd()))[-1])}",
+                                          text=f"Složka pro uložení výsledného souboru: "
+                                               f"{Path.cwd().name!s}",
                                           text_color="green"))
         self._widgets.append(self._output_widgets)
 
         self._start_widgets = (ButtonBase(master=self._frame,
                                           command=self._threaded_start,
-                                          text='Start'),
+                                          text="Start"),
                                LabelBase(master=self._frame,
-                                         text=''))
+                                         text=""))
         self._widgets.append(self._start_widgets)
 
         self._arrange_widgets()
 
     def _arrange_widgets(self) -> None:
         """
-        arranges widgets into a grid layout within the app's frame, uses the private variables self._widgets and self._frame
+        arranges widgets into a grid layout within the app's frame, uses the private variables
+        self._widgets and self._frame
         :return: None
         """
         for i, row in enumerate(self._widgets):
@@ -74,38 +80,40 @@ class Dotacovatko(CTk):
         :return: None
         """
         file_types = [("Excel soubor", "*.xlsx *.xls")]
-        file_path = filedialog.askopenfilename(filetypes=file_types,
-                                               initialdir=os.getcwd())
+        file_path = Path(filedialog.askopenfilename(filetypes=file_types,
+                                                    initialdir=Path.cwd()))
 
         if file_path:
             if self._excel_processor.set_input(file_path):
-                self._input_widgets[1].configure(text=f"Soubor {str(file_path.split(SeparatorGetter.get_separator(file_path))[-1])} úspěšně načten.",
+                self._input_widgets[1].configure(text=f"Soubor {file_path.name!s} úspěšně načten.",
                                                  text_color="green")
             else:
                 self._input_widgets[1].configure(
-                    text=f"Chyba při otevírání Excel souboru na vstup.",
+                    text="Chyba při otevírání Excel souboru na vstup.",
                     text_color="red")
 
     def _choose_output_folder(self) -> None:
         """
-        Lets the user choose an output folder for the processed Excel file, sets it up in the ExcelProcessor
+        Lets the user choose an output folder for the processed Excel file, sets it up in the
+        ExcelProcessor
         :return: None
         """
-        directory_path = filedialog.askdirectory(initialdir=os.getcwd())
+        directory_path = Path(filedialog.askdirectory(initialdir=Path.cwd()))
 
         if directory_path:
             if self._excel_processor.set_output_directory(directory_path):
-                self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: {str(directory_path.split(SeparatorGetter.get_separator(directory_path))[-1])}",
+                self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: "
+                                                       f"{directory_path.name!s}",
                                                   text_color="green")
             else:
-                self._output_widgets[1].configure(text=f"Chyba při načítání složky pro výstup.",
+                self._output_widgets[1].configure(text="Chyba při načítání složky pro výstup.",
                                                   text_color="red")
 
     def _threaded_start(self) -> None:
         self._start_widgets[1].configure(text="")
         self.update_idletasks(),
-        self._progress_bar.grid(row=self._start_widgets[1].grid_info()['row'],
-                                column=self._start_widgets[1].grid_info()['column'])
+        self._progress_bar.grid(row=self._start_widgets[1].grid_info()["row"],
+                                column=self._start_widgets[1].grid_info()["column"])
 
         progressbar_thread = threading.Thread(target=CTkProgressBar.start,
                                               args=(self._progress_bar,))
@@ -126,6 +134,6 @@ class Dotacovatko(CTk):
 
         data_load = self._excel_processor.load_data()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = Dotacovatko()
     app.mainloop()

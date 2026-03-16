@@ -1,9 +1,18 @@
+"""
+This module defines the ErrorHandler class, meant as a utility class for processing and displaying
+error messages to the end user as a pop-up window
+"""
 from tkinter.constants import BOTH
 
 from customtkinter import CTkToplevel
-from src.Widgets import ButtonBase, LabelBase, FrameBase
+
+from src.Widgets import ButtonBase, FrameBase, LabelBase
+
 
 class ErrorHandler(CTkToplevel):
+    """
+    Class used as a utility to display error messages to the user inside a pop-up window
+    """
     def __init__(self,
                  *args,
                  error_message: str,

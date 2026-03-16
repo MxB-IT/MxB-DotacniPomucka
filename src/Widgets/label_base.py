@@ -1,6 +1,10 @@
+"""
+This module defines the LabelBase class which is used to define the basic characteristics of every
+single ctkLabel used within the app GUI
+"""
 from tkinter import Canvas
-from typing import Union
-from customtkinter import CTkLabel, CTkFrame
+
+from customtkinter import CTkFrame, CTkLabel
 
 from src.Enums import ColorEnum
 
@@ -11,11 +15,12 @@ class LabelBase(CTkLabel):
     """
     def __init__(self,
                  *args,
-                 master: Union[CTkFrame, Canvas],
-                 text_color: Union[str, ColorEnum] = ColorEnum.MXB_RED,
+                 master: CTkFrame | Canvas,
+                 text_color: str | ColorEnum = ColorEnum.MXB_RED,
                  **kwargs):
         """
-        initializer method used for initialization of the label widgets, calls the super initializer with passed args
+        initializer method used for initialization of the label widgets, calls the super
+        initializer with passed args
         :param args: non-keyword arguments
         :param master: master of the label widgets, either a CTkFrame or a Canvas
         :param text_color: color of the label text, either a string or a ColorEnum value

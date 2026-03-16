@@ -13,7 +13,7 @@ import pandas as pd
 import requests
 
 from src.Enums.err_no_enum import ErrNoEnum
-from src.Utils.ErrorHandler import ErrorHandler
+from src.Utils.error_handler import ErrorHandler
 
 
 class TemplateManager:
