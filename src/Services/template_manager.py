@@ -151,8 +151,10 @@ class TemplateManager:
         :return: boolean representing the success or failure of the write
         """
         try:
-            row_index: int | str = self.template[sheet_name].index[row] if row is not None else row_header
-            col_index: int | str = self.template[sheet_name].index[col] if col is not None else col_header
+            row_index: int | str = self.template[sheet_name].index[row]\
+                if row is not None else row_header
+            col_index: int | str = self.template[sheet_name].index[col]\
+                if col is not None else col_header
 
             if row_index is None or col_index is None:
                 raise IndexError("No index provided for writing in the sheet")
@@ -164,3 +166,4 @@ class TemplateManager:
         except (IndexError, KeyError, TypeError, AttributeError):
             return False
         return True
+

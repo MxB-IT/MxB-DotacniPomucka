@@ -2,10 +2,12 @@
 This module contains the ExcelProcessor class used for processing the provided input Excel file
 """
 from pathlib import Path
+from unittest import case
 
 import pandas as pd
 
 from src.Enums.err_no_enum import ErrNoEnum
+from src.Enums.template_sheet_names_enum import TemplateSheetNames
 from src.Services.template_manager import TemplateManager
 from src.Utils.error_handler import ErrorHandler
 
@@ -19,9 +21,8 @@ class ExcelProcessor:
         self.output_directory = None
         self.data = None
         self.template = None
+        self.template_manager: TemplateManager | None = None
         self.employee_data = []
-        self.template_intro_sheet = None
-        self.template_employee_sheet = None
 
     def set_input(self, file_path: Path) -> None:
         """
@@ -45,16 +46,16 @@ class ExcelProcessor:
         :return: bool indicating if the template was successfully loaded
         """
         try:
-            template_manager = TemplateManager(r"https://mpsv.gov.cz/cms/documents/57e12a5e-05b3-6511-0b8a-25dab64d5396/seznam%20zam%C4%9Bstnanc%C5%AF%20OZP_verze%2023_9_2025.xlsx")
+            self.template_manager = TemplateManager(r"https://mpsv.gov.cz/cms/documents/57e12a5e-05b3-6511-0b8a-25dab64d5396/seznam%20zam%C4%9Bstnanc%C5%AF%20OZP_verze%2023_9_2025.xlsx")
         except PermissionError as e:
             ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD, error_message=str(e))
             return False
 
-        if not template_manager.download_template():
+        if not self.template_manager.download_template():
             raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
                                   "připojení k internetu a zkuste to prosím znovu.")
 
-        self.template = pd.read_excel(io=template_manager.path,
+        self.template = pd.read_excel(io=self.template_manager.path,
                                       header=[10, 11],
                                       thousands=".",
                                       decimal=",",
@@ -117,7 +118,7 @@ class ExcelProcessor:
         return True
 
     def _clean_indexing(self):
-        self.template.columns = pd.MultiIndex.from_tuples(
+        self.template[TemplateSheetNames.EMPLOYEE_LIST].columns = pd.MultiIndex.from_tuples(
             [("" if "Unnamed" in a else a, b) for a, b in self.template.columns]
         )
 
@@ -133,5 +134,28 @@ class ExcelProcessor:
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
         """
-        return True
+        months: list[int] = [int(name.split("_")[0]) for name in self.data if "_" in name]
+        year: int = int(self.data.keys()[0].split("_")[1])
 
+        match months:
+            case [1, 2, 3]:
+                quarter: int = 1
+            case [4, 5, 6]:
+                quarter: int = 2
+            case [7, 8, 9]:
+                quarter: int = 3
+            case [10, 11, 12]:
+                quarter: int = 4
+            case _:
+                return False
+
+        self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
+                                              value=quarter,
+                                              row=5,
+                                              col=3)
+
+        self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
+                                              value=year,
+                                              row=5,
+                                              col=8)
+        return True
