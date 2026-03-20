@@ -6,9 +6,11 @@ from unittest import case
 
 import pandas as pd
 
+from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
 from src.Services.template_manager import TemplateManager
+from src.Utils.employee import Employee
 from src.Utils.error_handler import ErrorHandler
 
 
@@ -22,7 +24,7 @@ class ExcelProcessor:
         self.data = None
         self.template = None
         self.template_manager: TemplateManager | None = None
-        self.employee_data = []
+        self.employee_data: list[Employee] = []
 
     def set_input(self, file_path: Path) -> None:
         """
@@ -61,16 +63,6 @@ class ExcelProcessor:
                                       decimal=",",
                                       sheet_name=None,
                                       engine="openpyxl")
-
-        self.template_intro_sheet = self.template["1) Úvodní list"]
-        self.template_employee_sheet =self.template["2) seznam zaměstnanců OZP"]
-
-        with Path("output.txt").open(mode="w", encoding="utf-8") as f:
-            sheet_names = list(self.template.keys())
-            f.write(f"Sheet name: {sheet_names[1]}")
-            f.write("-" * 30 + "\n")
-            f.write(self.template.to_string())
-
         return True
 
     def load_data(self) -> bool:
@@ -127,6 +119,8 @@ class ExcelProcessor:
         Prepares employee data in the input sheet into a better format to work with
         :return: bool indicating success or failure
         """
+        employee: Employee = Employee()
+
         return True
 
     def _set_year_and_quarter(self) -> bool:
