@@ -81,17 +81,10 @@ class Employee:
 
     def get_birth_num(self) -> str | None:
         """
-        Getter for the birth number private attribute, checks whether birth number is blank and
-        shows an error to the user if it is, to ensure the user knows why the writing failed
+        Getter for the birth number private attribute, since birth num can be blank (with
+        foreigners for example), it is not checked for blankness
         :return: birth number of the employee if it exists, None otherwise
         """
-        if self._birth_num is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadané rodné číslo a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
         return self._birth_num
 
     def set_contract_start_date(self, contract_start_date: DateTime) -> None:
