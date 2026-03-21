@@ -2,10 +2,10 @@
 This module contains the ExcelProcessor class used for processing the provided input Excel file
 """
 from pathlib import Path
-from unittest import case
 
 import pandas as pd
 
+from src.Enums import MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
@@ -21,10 +21,11 @@ class ExcelProcessor:
     def __init__(self) -> None:
         self.file_path = None
         self.output_directory = None
-        self.data = None
-        self.template = None
+        self.data: pd.ExcelFile | None = None
+        self.template: pd.ExcelFile | None = None
         self.template_manager: TemplateManager | None = None
-        self.employee_data: list[Employee] = []
+        self.employee_data: dict[int, Employee] = {}
+        self._data_months: dict[str, pd.DataFrame | None] | None = None
 
     def set_input(self, file_path: Path) -> None:
         """
@@ -71,12 +72,8 @@ class ExcelProcessor:
         :return: bool indicating success or failure
         """
         try:
-            self.data = pd.read_excel(io=self.file_path,
-                                      header=0,
-                                      thousands=".",
-                                      decimal=",",
-                                      engine="openpyxl",
-                                      sheet_name=None)
+            self.data = pd.ExcelFile(io=self.file_path)
+
         except OSError:
             ErrorHandler(error_code=ErrNoEnum.ERR_OPENING_EXCEL,
                          error_message="Nepodařilo se otevřít Excel soubor, prosím ujistěte se, že"
@@ -114,12 +111,22 @@ class ExcelProcessor:
             [("" if "Unnamed" in a else a, b) for a, b in self.template.columns]
         )
 
-    def _prepare_employee_data(self) -> bool:
+    def _process_employee_data(self) -> bool:
         """
-        Prepares employee data in the input sheet into a better format to work with
+        Processes employee data in the input sheet and inputs them into the template
         :return: bool indicating success or failure
         """
         employee: Employee = Employee()
+
+        first_month: pd.DataFrame = self.data.parse(self.data.sheet_names[0])
+        second_month: pd.DataFrame = self.data.parse(self.data.sheet_names[1])
+        third_month: pd.DataFrame = self.data.parse(self.data.sheet_names[2])
+        human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
+
+        self._data_months[self._data_months.keys()] = first_month
+
+        for month in self._data_months:
+
 
         return True
 
@@ -128,18 +135,35 @@ class ExcelProcessor:
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
         """
-        months: list[int] = [int(name.split("_")[0]) for name in self.data if "_" in name]
-        year: int = int(self.data.keys()[0].split("_")[1])
+        months: list[int] = [int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m]
+        if months is None:
+            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                         error_message="Chyba během zpracování vstupního souboru, prosím zkontrolujte "
+                                       "formát Excelu na vstupu programu.")
+
+        year: int = int(self.data.sheet_names[0].split("_")[1])
 
         match months:
             case [1, 2, 3]:
                 quarter: int = 1
+                self._data_months = {MonthEnum.JAN : None,
+                                     MonthEnum.FEB : None,
+                                     MonthEnum.MAR : None}
             case [4, 5, 6]:
                 quarter: int = 2
+                self._data_months = {MonthEnum.APR : None,
+                                     MonthEnum.MAY : None,
+                                     MonthEnum.JUN : None}
             case [7, 8, 9]:
                 quarter: int = 3
+                self._data_months = {MonthEnum.JUL : None,
+                                     MonthEnum.AUG : None,
+                                     MonthEnum.SEP : None}
             case [10, 11, 12]:
                 quarter: int = 4
+                self._data_months = {MonthEnum.OCT : None,
+                                     MonthEnum.NOV : None,
+                                     MonthEnum.DEC : None}
             case _:
                 return False
 
