@@ -8,6 +8,7 @@ import pandas as pd
 from src.Enums import MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
+from src.Enums.human_resources_headers_enum import HumanResourcesHeaders
 from src.Enums.month_headers_enum import MonthHeaders
 from src.Enums.quarter_enum import Quarters
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
@@ -118,20 +119,54 @@ class ExcelProcessor:
                                                 self.data.parse(self.data.sheet_names[1]),
                                                 self.data.parse(self.data.sheet_names[2])]
 
-        human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
+        human_resources: pd.DataFrame = self.data.parse(io=self.data.sheet_names[3],
+                                                        parse_dates=[HumanResourcesHeaders.DISABILITY_START])
 
         for idx, key in enumerate(self._data_months):
             self._data_months[key] = month_dataframes[idx]
 
         for month_sheet in self._data_months:
             month = IntMonthMapper.from_int(int(month_sheet.attrs["sheet_name"].split("_")[0]))
-            for row in month_sheet.iterrows():
-                employee: Employee = Employee()
+            for _, row in month_sheet.iterrows():
+                personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
 
-                employee.set_birth_num(row[MonthHeaders.BIRTH_NUM])
-                employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START])
-                employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END])
-                employee.set_gross_pay(month, row[MonthHeaders.GROSS_PAY])
+                if personal_num not in self.employee_data:
+                    hr_matches: pd.DataFrame = human_resources.loc[
+                        human_resources[HumanResourcesHeaders.PERSONAL_NUM] == personal_num
+                    ]
+                    if hr_matches.empty:
+                        ErrorHandler(
+                            error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                            error_message="Něco se nepodařilo, zkontrolujte prosím, že každý "
+                            "zaměstnanec je zaveden v tabulce personalistika",
+                        )
+                        return False
+
+                    hr_row: pd.DataFrame = hr_matches.iloc[0]
+
+                    employee: Employee = Employee()
+
+                    employee.set_birth_num(row[MonthHeaders.BIRTH_NUM])
+                    employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START])
+                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END])
+
+                    employee.set_surname(hr_row[HumanResourcesHeaders.SURNAME])
+                    employee.set_first_name(hr_row[HumanResourcesHeaders.FIRST_NAME])
+                    employee.set_insurance_code(hr_row[HumanResourcesHeaders.INSURANCE_COMPANY])
+                    employee.set_disability_status(DisabilityStatus(hr_row[HumanResourcesHeaders.DISABILITY_STATUS]))
+                    employee.set_disability_recognised_from(hr_row[HumanResourcesHeaders.DISABILITY_START])
+
+                else:
+                    employee = self.employee_data[personal_num]
+
+                employee.set_gross_pay(month,
+                                       float(row[MonthHeaders.GROSS_PAY]))
+                employee.set_insurance_payment(month,
+                                               float(row[MonthHeaders.INSURANCE_PAYMENT]))
+                employee.set_pay_for_actual_work(month,
+                                                 float(row[MonthHeaders.PAY_FOR_ACTUAL_WORK]))
+
+                self.employee_data[personal_num] = employee
 
         return True
 

@@ -11,6 +11,6 @@ class DisabilityStatus(StrEnum):
     This class contains the enumeration of all the possible disability statuses that the government
     Excel template recognises
     """
-    TZP = "TZP",
+    TZP = "TZP"
     OZP12 = "OZP12"
     OZZ = "OZZ"

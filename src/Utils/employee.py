@@ -2,7 +2,7 @@
 This module defines the Employee class used mainly as a data structure to put together data about
 a certain employee before writing it into the government template
 """
-from openpyxl.descriptors import DateTime
+from datetime import datetime
 
 from src.Enums import ErrNoEnum, MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
@@ -18,11 +18,11 @@ class Employee:
         self._surname: str | None = None
         self._first_name: str | None = None
         self._birth_num: str | None = None
-        self._contract_start_date: DateTime | None = None
-        self._contract_end_date: DateTime | None = None
+        self._contract_start_date: datetime | None = None
+        self._contract_end_date: datetime | None = None
         self._insurance_code: int | None = None
-        self._disability_recognised_from: DateTime | None = None
-        self._disability_recognised_to: DateTime | None = None
+        self._disability_recognised_from: datetime | None = None
+        self._disability_recognised_to: datetime | None = None
         self._disability_status: DisabilityStatus | None = None
         self._gross_pay: dict[MonthEnum, float] | None = None
         self._pay_for_actual_work: dict[MonthEnum, float] | None = None
@@ -89,7 +89,7 @@ class Employee:
         """
         return self._birth_num
 
-    def set_contract_start_date(self, contract_start_date: DateTime) -> None:
+    def set_contract_start_date(self, contract_start_date: datetime) -> None:
         """
         Setter for the date_of_contract_start private attribute
         :param contract_start_date: date of contrast start to assign to the employee instance
@@ -97,7 +97,7 @@ class Employee:
         """
         self._contract_start_date = contract_start_date
 
-    def get_contract_start_date(self) -> DateTime | None:
+    def get_contract_start_date(self) -> datetime | None:
         """
         Getter for the contract start date private attribute, checks whether contract start date
         is blank and shows an error to the user if it is, to ensure the user knows why the writing
@@ -113,7 +113,7 @@ class Employee:
             )
         return self._contract_start_date
 
-    def set_contract_end_date(self, contract_end_date: DateTime) -> None:
+    def set_contract_end_date(self, contract_end_date: datetime) -> None:
         """
         Setter for the contract end date private attribute
         :param contract_end_date: contract end date to assign to the employee instance
@@ -121,7 +121,7 @@ class Employee:
         """
         self._contract_end_date = contract_end_date
 
-    def get_contract_end_date(self) -> DateTime | None:
+    def get_contract_end_date(self) -> datetime | None:
         """
         Getter for the contract end date private attribute, since this information is not mandatory
         to fill in, this getter does not error when the attribute is None
@@ -152,7 +152,7 @@ class Employee:
             )
         return self._insurance_code
 
-    def set_disability_recognised_from(self, disability_recognised_from: DateTime) -> None:
+    def set_disability_recognised_from(self, disability_recognised_from: datetime) -> None:
         """
         Setter for the private attribute signifying from when the employees disability is
         officially recognised
@@ -162,7 +162,7 @@ class Employee:
         """
         self._disability_recognised_from = disability_recognised_from
 
-    def get_disability_recognised_from(self) -> DateTime | None:
+    def get_disability_recognised_from(self) -> datetime | None:
         """
         Getter for the disability recognised from private attribute, checks whether disability
         recognised from is blank and shows an error to the user if it is, to ensure the user knows
@@ -178,7 +178,7 @@ class Employee:
             )
         return self._disability_recognised_from
 
-    def set_disability_recognised_to(self, disability_recognised_to: DateTime) -> None:
+    def set_disability_recognised_to(self, disability_recognised_to: datetime) -> None:
         """
         Setter for the private attribute signifying until which date the employees disability is
         officially recognised
@@ -188,7 +188,7 @@ class Employee:
         """
         self._disability_recognised_to = disability_recognised_to
 
-    def get_disability_recognised_to(self) -> DateTime | None:
+    def get_disability_recognised_to(self) -> datetime | None:
         """
         Getter for the disability recognised to private attribute, since this information is not
         mandatory to fill in, this getter does not error when the attribute is None
