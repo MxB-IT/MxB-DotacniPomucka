@@ -8,7 +8,10 @@ import pandas as pd
 from src.Enums import MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
+from src.Enums.month_headers_enum import MonthHeaders
+from src.Enums.quarter_enum import Quarters
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
+from src.Mappers.int_month_mapper import IntMonthMapper
 from src.Services.template_manager import TemplateManager
 from src.Utils.employee import Employee
 from src.Utils.error_handler import ErrorHandler
@@ -58,12 +61,7 @@ class ExcelProcessor:
             raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
                                   "připojení k internetu a zkuste to prosím znovu.")
 
-        self.template = pd.read_excel(io=self.template_manager.path,
-                                      header=[10, 11],
-                                      thousands=".",
-                                      decimal=",",
-                                      sheet_name=None,
-                                      engine="openpyxl")
+        self.template = pd.ExcelFile(io=self.template_manager.path)
         return True
 
     def load_data(self) -> bool:
@@ -116,17 +114,24 @@ class ExcelProcessor:
         Processes employee data in the input sheet and inputs them into the template
         :return: bool indicating success or failure
         """
-        employee: Employee = Employee()
+        month_dataframes: list[pd.DataFrame] = [self.data.parse(self.data.sheet_names[0]),
+                                                self.data.parse(self.data.sheet_names[1]),
+                                                self.data.parse(self.data.sheet_names[2])]
 
-        first_month: pd.DataFrame = self.data.parse(self.data.sheet_names[0])
-        second_month: pd.DataFrame = self.data.parse(self.data.sheet_names[1])
-        third_month: pd.DataFrame = self.data.parse(self.data.sheet_names[2])
         human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
 
-        self._data_months[self._data_months.keys()] = first_month
+        for idx, key in enumerate(self._data_months):
+            self._data_months[key] = month_dataframes[idx]
 
-        for month in self._data_months:
+        for month_sheet in self._data_months:
+            month = IntMonthMapper.from_int(int(month_sheet.attrs["sheet_name"].split("_")[0]))
+            for row in month_sheet.iterrows():
+                employee: Employee = Employee()
 
+                employee.set_birth_num(row[MonthHeaders.BIRTH_NUM])
+                employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START])
+                employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END])
+                employee.set_gross_pay(month, row[MonthHeaders.GROSS_PAY])
 
         return True
 
@@ -135,31 +140,32 @@ class ExcelProcessor:
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
         """
-        months: list[int] = [int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m]
+        months: set[int] = {int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m}
         if months is None:
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                         error_message="Chyba během zpracování vstupního souboru, prosím zkontrolujte "
-                                       "formát Excelu na vstupu programu.")
+                         error_message="Chyba během zpracování vstupního souboru, prosím "
+                                       "zkontrolujte formát Excelu na vstupu programu.")
+            return False
 
         year: int = int(self.data.sheet_names[0].split("_")[1])
 
         match months:
-            case [1, 2, 3]:
+            case Quarters.FIRST_QUARTER:
                 quarter: int = 1
                 self._data_months = {MonthEnum.JAN : None,
                                      MonthEnum.FEB : None,
                                      MonthEnum.MAR : None}
-            case [4, 5, 6]:
+            case Quarters.SECOND_QUARTER:
                 quarter: int = 2
                 self._data_months = {MonthEnum.APR : None,
                                      MonthEnum.MAY : None,
                                      MonthEnum.JUN : None}
-            case [7, 8, 9]:
+            case Quarters.THIRD_QUARTER:
                 quarter: int = 3
                 self._data_months = {MonthEnum.JUL : None,
                                      MonthEnum.AUG : None,
                                      MonthEnum.SEP : None}
-            case [10, 11, 12]:
+            case Quarters.FOURTH_QUARTER:
                 quarter: int = 4
                 self._data_months = {MonthEnum.OCT : None,
                                      MonthEnum.NOV : None,
@@ -176,4 +182,5 @@ class ExcelProcessor:
                                               value=year,
                                               row=5,
                                               col=8)
+
         return True

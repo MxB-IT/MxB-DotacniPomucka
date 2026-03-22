@@ -24,7 +24,9 @@ class Employee:
         self._disability_recognised_from: DateTime | None = None
         self._disability_recognised_to: DateTime | None = None
         self._disability_status: DisabilityStatus | None = None
-        self._pay: dict[MonthEnum, float] | None = None
+        self._gross_pay: dict[MonthEnum, float] | None = None
+        self._pay_for_actual_work: dict[MonthEnum, float] | None = None
+
         self._insurance_payment: dict[MonthEnum, float] | None = None
 
     def set_surname(self, surname: str) -> None:
@@ -218,37 +220,72 @@ class Employee:
             )
         return self._disability_status
 
-    def set_pay(self, month: MonthEnum, pay: float) -> None:
+    def set_gross_pay(self, month: MonthEnum, pay: float) -> None:
         """
-        Setter for the pay private attribute, sets pay for the chosen month
+        Setter for the gross_pay private attribute, sets pay for the chosen month
         :param month: month for which the salary is relevant
         :param pay: the employee's salary before tax
         :return: None
         """
-        self._pay[month] = pay
+        self._gross_pay[month] = pay
 
-    def get_pay(self, month: MonthEnum) -> float | None:
+    def get_gross_pay(self, month: MonthEnum) -> float | None:
         """
-        Getter for the pay for a given month private attribute, checks whether pay for the month is
-        blank and shows an error to the user if it is, to ensure the user knows why the writing
-        failed
-        :param month: month from which to get the employee's pay
-        :return: pay for a given month for the employee if it exists, None otherwise
+        Getter for the gross_pay for a given month private attribute, checks whether pay for the
+        month is blank and shows an error to the user if it is, to ensure the user knows why the
+        writing failed
+        :param month: month from which to get the employee's gross pay
+        :return: gross pay for a given month for the employee if it exists, None otherwise
         """
         try:
-            if self._pay[month] is None:
+            if self._gross_pay[month] is None:
                 ErrorHandler(
                     error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                                   "zaměstnanec má na vstupu zadanou pro každý měsíc hrubou mzdu a "
                                   "zkuste to prosím znovu.",
                     error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
                 )
-            return self._pay[month]
+            return self._gross_pay[month]
         except KeyError:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadanou pro každý měsíc hrubou mzdu a "
                 "zkuste to prosím znovu.",
+                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+            )
+            return None
+
+    def set_pay_for_actual_work(self, month: MonthEnum, pay: float) -> None:
+        """
+        Setter for the pay_for_actual_month private attribute, sets pay for the chosen month
+        :param month: month for which to set the pay_for_actual_work
+        :param pay: how much the employee was paid for actual work
+        :return: None
+        """
+        self._pay_for_actual_work[month] = pay
+
+    def get_pay_for_actual_work(self, month: MonthEnum) -> float | None:
+        """
+        Getter for the pay_for_actual_work attribute, checks whether pay for_actual_work is blank
+        and since this attribute is mandatory (the government Excel template requires it), errors
+        out, displaying an error to the user if it isn't set
+        :param month: month for which to get the pay_for_actual_work
+        :return: pay for a given month for the employee if it exists, None otherwise
+        """
+        try:
+            if self._pay_for_actual_work[month] is None:
+                ErrorHandler(
+                    error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                  "zaměstnanec má na vstupu zadanou pro každý měsíc základní mzdu "
+                                  "a zkuste to prosím znovu.",
+                    error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                )
+            return self._pay_for_actual_work[month]
+        except KeyError:
+            ErrorHandler(
+                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                              "zaměstnanec má na vstupu zadanou pro každý měsíc základní mzdu "
+                              "a zkuste to prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
             return None
