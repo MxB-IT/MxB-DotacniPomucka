@@ -9,15 +9,15 @@ class MonthEnum(StrEnum):
     """
     Contains a mapping of sorts for translating English month names into Czech
     """
-    JAN = "Leden",
-    FEB = "Únor",
-    MAR = "Březen",
-    APR = "Duben",
-    MAY = "Květen",
-    JUN = "Červen",
-    JUL = "Červenec",
-    AUG = "Srpen",
-    SEP = "Září",
-    OCT = "Říjen"
-    NOV = "Listopad",
-    DEC = "Prosinec"
+    JAN = "LEDEN",
+    FEB = "ÚNOR",
+    MAR = "BŘEZEN",
+    APR = "DUBEN",
+    MAY = "KVĚTEN",
+    JUN = "ČERVEN",
+    JUL = "ČERVENEC",
+    AUG = "SRPEN",
+    SEP = "ZÁŘÍ",
+    OCT = "ŘÍJEN"
+    NOV = "LISTOPAD",
+    DEC = "PROSINEC"

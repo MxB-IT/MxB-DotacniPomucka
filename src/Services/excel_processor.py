@@ -7,6 +7,7 @@ import pandas as pd
 
 from src.Enums import MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
+from src.Enums.employee_sheet_headers import EmployeeSheetHeaders
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Enums.human_resources_headers_enum import HumanResourcesHeaders
 from src.Enums.month_headers_enum import MonthHeaders
@@ -27,6 +28,8 @@ class ExcelProcessor:
         self.output_directory = None
         self.data: pd.ExcelFile | None = None
         self.template: pd.ExcelFile | None = None
+        self.template_employee_sheet: pd.DataFrame | None = None
+        self.template_intro_sheet: pd.DataFrame | None = None
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
         self._data_months: dict[str, pd.DataFrame | None] | None = None
@@ -61,8 +64,6 @@ class ExcelProcessor:
         if not self.template_manager.download_template():
             raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
                                   "připojení k internetu a zkuste to prosím znovu.")
-
-        self.template = pd.ExcelFile(io=self.template_manager.path)
         return True
 
     def load_data(self) -> bool:
@@ -85,29 +86,79 @@ class ExcelProcessor:
         Processes the input Excel file and populates the template with data extracted from it
         :return: bool indicating success or failure
         """
-        try:
-            for employee, (idx, _row) in zip(self.employee_data,
-                                            self.template.iterrows(),
-                                            strict=False):
-                employee_name: str = employee[0, "Jméno"]
-                employee_surname: str = employee_name.split(sep=",")[0]
-                employee_firstname: str = employee_name.split(sep=",")[1]
+        self._process_employee_data()
 
-                self.template.at[idx, ("", "Příjmení")] = employee_surname
-                self.template.at[idx, ("", "Jméno")] = employee_firstname
+        row: int = 12
 
-                self.template.at[idx, (self.template.columns[1][0], "Hrubá mzda / plat (v Kč)")] =\
-                    employee["Součet hrubé mzdy a náhrady za nemoc"]
+        for _, employee in self.employee_data:
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=(
+                                                      "",
+                                                      EmployeeSheetHeaders.FIRST_NAME
+                                                  ),
+                                                  row=row,
+                                                  value=employee.get_first_name())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=(
+                                                      "",
+                                                      EmployeeSheetHeaders.SURNAME
+                                                  ),
+                                                  row=row,
+                                                  value=employee.get_surname())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=(
+                                                      "",
+                                                      EmployeeSheetHeaders.BIRTH_NUM
+                                                  ),
+                                                  row=row,
+                                                  value=employee.get_birth_num())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=(
+                                                      "",
+                                                      EmployeeSheetHeaders.CONTRACT_START
+                                                  ),
+                                                  value=employee.get_contract_start())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=
+                                                  (
+                                                      "",
+                                                      EmployeeSheetHeaders.CONTRACT_END
+                                                  ),
+                                                  value=employee.get_contract_end())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=
+                                                  (
+                                                      "",
+                                                      EmployeeSheetHeaders.INSURANCE_COMPANY
+                                                  ),
+                                                  value=employee.get_insurance_company())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=
+                                                  (
+                                                      "",
+                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM
+                                                  ),
+                                                  value=employee.get_disability_recognition_from())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=
+                                                  (
+                                                      "Měsíc:",
+                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO
+                                                  ),
+                                                  value=employee.get_disability_recognition_to())
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                                  col_header=
+                                                  (
+                                                      next(iter(self._data_months)),
+                                                      EmployeeSheetHeaders.DISABILITY_STATUS
+                                                  ),
+                                                  value=employee.get_disability_status())
 
-        except (IndexError, KeyError, TypeError):
-            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                         error_message="Chyba během zpracovávání Excelu, zkuste to prosím znovu")
-            return False
         return True
 
     def _clean_indexing(self):
-        self.template[TemplateSheetNames.EMPLOYEE_LIST].columns = pd.MultiIndex.from_tuples(
-            [("" if "Unnamed" in a else a, b) for a, b in self.template.columns]
+        self.template_employee_sheet.columns = pd.MultiIndex.from_tuples(
+            [("" if "Unnamed" in a else a, b) for a, b in self.template_employee_sheet.columns]
         )
 
     def _process_employee_data(self) -> bool:

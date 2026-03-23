@@ -138,8 +138,8 @@ class TemplateManager:
                         value: str | int | float,
                         row: int | None = None,
                         col: int | None = None,
-                        row_header: str | tuple[str | str] | None = None,
-                        col_header: str | tuple[str | str] | None = None) -> bool:
+                        row_header: str | tuple[str, str] | None = None,
+                        col_header: str | tuple[str, str] | None = None) -> bool:
         """
         Method used for writing into a certain cell of the template
         :param sheet_name: sheet the cell is in
@@ -151,18 +151,16 @@ class TemplateManager:
         :return: boolean representing the success or failure of the write
         """
         try:
-            row_index: int | str = self.template[sheet_name].index[row]\
-                if row is not None else row_header
-            col_index: int | str = self.template[sheet_name].index[col]\
-                if col is not None else col_header
+            sheet = self.template[sheet_name]
 
-            if row_index is None or col_index is None:
-                raise IndexError("No index provided for writing in the sheet")
+            row_idx = sheet.index(row) if row is not None else row_header
+            col_idx = sheet.columns[col] if col is not None else col_header
 
-            if sheet_name is None or sheet_name not in self.template:
-                raise IndexError("Sheet name not found in template")
+            if row_idx is None or col_idx is None:
+                ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                             error_message="Interní chyba proramu, zkuste to prosím znovu.")
+            sheet.at[row_idx, col_idx] = value
 
-            self.template[sheet_name].at[row_index, col_index] = value
         except (IndexError, KeyError, TypeError, AttributeError):
             return False
         return True
