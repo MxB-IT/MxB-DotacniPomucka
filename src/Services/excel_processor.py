@@ -91,68 +91,102 @@ class ExcelProcessor:
         row: int = 12
 
         for _, employee in self.employee_data:
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       "",
-                                                      EmployeeSheetHeaders.FIRST_NAME
+                                                      EmployeeSheetHeaders.FIRST_NAME.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_first_name())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       "",
-                                                      EmployeeSheetHeaders.SURNAME
+                                                      EmployeeSheetHeaders.SURNAME.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_surname())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       "",
-                                                      EmployeeSheetHeaders.BIRTH_NUM
+                                                      EmployeeSheetHeaders.BIRTH_NUM.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_birth_num())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       "",
-                                                      EmployeeSheetHeaders.CONTRACT_START
+                                                      EmployeeSheetHeaders.CONTRACT_START.value
                                                   ),
                                                   value=employee.get_contract_start())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "",
-                                                      EmployeeSheetHeaders.CONTRACT_END
+                                                      EmployeeSheetHeaders.CONTRACT_END.value
                                                   ),
+                                                  row=row,
                                                   value=employee.get_contract_end())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "",
-                                                      EmployeeSheetHeaders.INSURANCE_COMPANY
+                                                      EmployeeSheetHeaders.INSURANCE_COMPANY.value
                                                   ),
                                                   value=employee.get_insurance_company())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "",
-                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM
+                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value
                                                   ),
+                                                  row=row,
                                                   value=employee.get_disability_recognition_from())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "Měsíc:",
-                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO
+                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value
                                                   ),
                                                   value=employee.get_disability_recognition_to())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
-                                                  col_header=
-                                                  (
-                                                      next(iter(self._data_months)),
-                                                      EmployeeSheetHeaders.DISABILITY_STATUS
-                                                  ),
-                                                  value=employee.get_disability_status())
+
+            for month in self._data_months:
+
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.DISABILITY_STATUS.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_disability_status())
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.GROSS_PAY.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_gross_pay(month=MonthEnum(month)))
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.INSURANCE_PAYMENT.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_insurance_payment(month=MonthEnum(month)))
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value
+                                                      ),
+                                                      row=row,
+                                                      value=1 if employee.get_pay_for_actual_work
+                                                                 (month=MonthEnum(month)) > 0
+                                                      else 0)
+
+            row += 1
 
         return True
 
@@ -238,24 +272,24 @@ class ExcelProcessor:
         match months:
             case Quarters.FIRST_QUARTER:
                 quarter: int = 1
-                self._data_months = {MonthEnum.JAN : None,
-                                     MonthEnum.FEB : None,
-                                     MonthEnum.MAR : None}
+                self._data_months = {MonthEnum.JAN.value : None,
+                                     MonthEnum.FEB.value : None,
+                                     MonthEnum.MAR.value : None}
             case Quarters.SECOND_QUARTER:
                 quarter: int = 2
-                self._data_months = {MonthEnum.APR : None,
-                                     MonthEnum.MAY : None,
-                                     MonthEnum.JUN : None}
+                self._data_months = {MonthEnum.APR.value : None,
+                                     MonthEnum.MAY.value : None,
+                                     MonthEnum.JUN.value : None}
             case Quarters.THIRD_QUARTER:
                 quarter: int = 3
-                self._data_months = {MonthEnum.JUL : None,
-                                     MonthEnum.AUG : None,
-                                     MonthEnum.SEP : None}
+                self._data_months = {MonthEnum.JUL.value : None,
+                                     MonthEnum.AUG.value : None,
+                                     MonthEnum.SEP.value : None}
             case Quarters.FOURTH_QUARTER:
                 quarter: int = 4
-                self._data_months = {MonthEnum.OCT : None,
-                                     MonthEnum.NOV : None,
-                                     MonthEnum.DEC : None}
+                self._data_months = {MonthEnum.OCT.value : None,
+                                     MonthEnum.NOV.value : None,
+                                     MonthEnum.DEC.value : None}
             case _:
                 return False
 
