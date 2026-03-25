@@ -22,11 +22,12 @@ class TemplateManager:
     downloaded previously,
     it does not download anything, using the already downloaded file
     """
-    def __init__(self, template_url: str) -> None:
+    def __init__(self, template_url: str):
         self._url: str = template_url
         self._app_name: Path = Path("Dotacovatko")
         self.path: Path = self._get_writable_path()
-        self.template: dict[str, pd.DataFrame] | None = None
+        self.template: pd.ExcelFile | None = None
+        self._work_sheets: dict[str, pd.DataFrame] | None = None
 
     def _get_writable_path(self) -> Path:
         """
@@ -151,7 +152,7 @@ class TemplateManager:
         :return: boolean representing the success or failure of the write
         """
         try:
-            sheet = self.template[sheet_name]
+            sheet = self._get_sheet(sheet_name)
 
             row_idx = sheet.index(row) if row is not None else row_header
             col_idx = sheet.columns[col] if col is not None else col_header
@@ -165,3 +166,52 @@ class TemplateManager:
             return False
         return True
 
+    def write_file(self, destination: Path) -> bool:
+        """
+        Writes the processed template to a file, to the location specified by the destination param
+        :param destination: Path representation of the folder to write into
+        :return: bool, indicating success or failure of the write
+        """
+        if self.template is None:
+            return False
+
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+
+            with pd.ExcelWriter(destination, engine="openpyxl") as writer:
+                for sheet_name in self.template.sheet_names:
+                    df = self._work_sheets.get(sheet_name)
+                    if df is None:
+                        df = self.template.parse(sheet_name)
+
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            return True
+
+        except (PermissionError, OSError):
+            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                         error_message="Zpracovaný soubor se nepodařilo uložit!")
+            return False
+
+    def load_template_into_memory(self) -> bool:
+        """
+        Loads the downloaded template into memory, like a good TemplateManager should
+        :return: bool indicating success or failure of the load
+        """
+        try:
+            self.template = pd.ExcelFile(path_or_buffer=self.path)
+            return True
+        except Exception:
+            return False
+
+    def _get_sheet(self, sheet_name: str) -> pd.DataFrame:
+        """
+        Internal helper method for getting the specified sheet from the internal work cache or
+        parsing it from the ExcelFile if not yet loaded
+        :param sheet_name: sheet to be retrieved
+        :return: DataFrame of the sheet requested
+        """
+        if sheet_name not in self._work_sheets:
+            self._work_sheets[sheet_name] = self.template.parse(sheet_name)
+
+        return self._work_sheets[sheet_name]

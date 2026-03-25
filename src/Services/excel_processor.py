@@ -33,6 +33,8 @@ class ExcelProcessor:
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
         self._data_months: dict[str, pd.DataFrame | None] | None = None
+        self._year: int | None = None
+        self._quarter: int | None = None
 
     def set_input(self, file_path: Path) -> None:
         """
@@ -58,12 +60,18 @@ class ExcelProcessor:
         try:
             self.template_manager = TemplateManager(r"https://mpsv.gov.cz/cms/documents/57e12a5e-05b3-6511-0b8a-25dab64d5396/seznam%20zam%C4%9Bstnanc%C5%AF%20OZP_verze%2023_9_2025.xlsx")
         except PermissionError as e:
-            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD, error_message=str(e))
+            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                         error_message=str(e))
             return False
 
         if not self.template_manager.download_template():
             raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
                                   "připojení k internetu a zkuste to prosím znovu.")
+
+        if not self.template_manager.load_template_into_memory():
+            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                         error_message="Nepodařilo se načíst šablonu, zkontrolujte, že je šablona "
+                                       "v pořádku a zkuste to prosím znovu.")
         return True
 
     def load_data(self) -> bool:
@@ -72,7 +80,7 @@ class ExcelProcessor:
         :return: bool indicating success or failure
         """
         try:
-            self.data = pd.ExcelFile(io=self.file_path)
+            self.data = pd.ExcelFile(path_or_buffer=self.file_path)
 
         except OSError:
             ErrorHandler(error_code=ErrNoEnum.ERR_OPENING_EXCEL,
@@ -86,6 +94,9 @@ class ExcelProcessor:
         Processes the input Excel file and populates the template with data extracted from it
         :return: bool indicating success or failure
         """
+        if not self._set_year_and_quarter():
+            print("fuck")
+
         self._process_employee_data()
 
         row: int = 12
@@ -188,6 +199,9 @@ class ExcelProcessor:
 
             row += 1
 
+
+        self._save_processed(f"{self._quarter}Q{self._year}seznam+zaměstnanců+OZP.xlsx")
+
         return True
 
     def _clean_indexing(self):
@@ -204,14 +218,17 @@ class ExcelProcessor:
                                                 self.data.parse(self.data.sheet_names[1]),
                                                 self.data.parse(self.data.sheet_names[2])]
 
-        human_resources: pd.DataFrame = self.data.parse(io=self.data.sheet_names[3],
-                                                        parse_dates=[HumanResourcesHeaders.DISABILITY_START])
+        human_resources: pd.DataFrame = self.data.parse(io=self.data.sheet_names[3])
 
         for idx, key in enumerate(self._data_months):
             self._data_months[key] = month_dataframes[idx]
 
-        for month_sheet in self._data_months:
-            month = IntMonthMapper.from_int(int(month_sheet.attrs["sheet_name"].split("_")[0]))
+        for month_key, month_sheet in self._data_months.items():
+            if month_sheet is None:
+                continue
+
+            month: MonthEnum = MonthEnum(month_key)
+
             for _, row in month_sheet.iterrows():
                 personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
 
@@ -260,33 +277,33 @@ class ExcelProcessor:
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
         """
-        months: set[int] = {int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m}
+        months: tuple[int, ...] = tuple(int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m)
         if months is None:
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                          error_message="Chyba během zpracování vstupního souboru, prosím "
                                        "zkontrolujte formát Excelu na vstupu programu.")
             return False
 
-        year: int = int(self.data.sheet_names[0].split("_")[1])
+        self._year = int(self.data.sheet_names[0].split("_")[1])
 
         match months:
-            case Quarters.FIRST_QUARTER:
-                quarter: int = 1
+            case Quarters.FIRST_QUARTER.value:
+                self._quarter = 1
                 self._data_months = {MonthEnum.JAN.value : None,
                                      MonthEnum.FEB.value : None,
                                      MonthEnum.MAR.value : None}
-            case Quarters.SECOND_QUARTER:
-                quarter: int = 2
+            case Quarters.SECOND_QUARTER.value:
+                self._quarter = 2
                 self._data_months = {MonthEnum.APR.value : None,
                                      MonthEnum.MAY.value : None,
                                      MonthEnum.JUN.value : None}
-            case Quarters.THIRD_QUARTER:
-                quarter: int = 3
+            case Quarters.THIRD_QUARTER.value:
+                self._quarter = 3
                 self._data_months = {MonthEnum.JUL.value : None,
                                      MonthEnum.AUG.value : None,
                                      MonthEnum.SEP.value : None}
-            case Quarters.FOURTH_QUARTER:
-                quarter: int = 4
+            case Quarters.FOURTH_QUARTER.value:
+                self._quarter = 4
                 self._data_months = {MonthEnum.OCT.value : None,
                                      MonthEnum.NOV.value : None,
                                      MonthEnum.DEC.value : None}
@@ -294,13 +311,32 @@ class ExcelProcessor:
                 return False
 
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
-                                              value=quarter,
+                                              value=self._quarter,
                                               row=5,
                                               col=3)
 
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
-                                              value=year,
+                                              value=self._year,
                                               row=5,
                                               col=8)
 
         return True
+
+    def _save_processed(self, filename: str) -> bool:
+        """
+        Saves the processed data into an Excel file with a specified filename
+        :param filename: desired name of the output file
+        :return: bool indicating success or failure
+        """
+        if not self.output_directory:
+            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_SAVE,
+                         error_message="Složka pro výstup nebyla nastavena, zkuste to "
+                                       "prosím znovu.")
+            return False
+
+        final_path: Path = self.output_directory / filename
+
+        if final_path.suffix != ".xlsx":
+            final_path = final_path.with_suffix(".xlsx")
+
+        return self.template_manager.write_file(final_path)

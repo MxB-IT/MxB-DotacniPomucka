@@ -5,10 +5,12 @@ its window and for managing the invocation of all methods needed for its functio
 import threading
 from pathlib import Path
 from tkinter import filedialog
+from typing import Any
 
 from customtkinter import CTk, CTkProgressBar
 
 from src.Services import ExcelProcessor
+from src.Utils import SuccessHandler
 from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 
@@ -18,18 +20,18 @@ class Dotacovatko(CTk):
     """
     def __init__(self):
         super().__init__()
-        self._excel_processor = ExcelProcessor()
+        self._excel_processor: ExcelProcessor = ExcelProcessor()
 
         self.title("Dotační můstek")
 
-        self._frame = FrameBase(master=self)
+        self._frame: FrameBase = FrameBase(master=self)
 
         self._frame.pack(fill="both", expand=True)
 
-        self._progress_bar = ProgressBarBase(master=self._frame,
+        self._progress_bar: ProgressBarBase = ProgressBarBase(master=self._frame,
                                              mode="indeterminate")
 
-        self._widgets = []
+        self._widgets: list[Any] = []
 
         self._input_widgets = (ButtonBase(master=self._frame,
                                           command=self._open_input,
@@ -84,13 +86,13 @@ class Dotacovatko(CTk):
                                                     initialdir=Path.cwd()))
 
         if file_path:
-            if self._excel_processor.set_input(file_path):
-                self._input_widgets[1].configure(text=f"Soubor {file_path.name!s} úspěšně načten.",
-                                                 text_color="green")
-            else:
-                self._input_widgets[1].configure(
-                    text="Chyba při otevírání Excel souboru na vstup.",
-                    text_color="red")
+            self._excel_processor.set_input(file_path)
+            self._input_widgets[1].configure(text=f"Soubor {file_path.name!s} úspěšně načten.",
+                                             text_color="green")
+        else:
+            self._input_widgets[1].configure(
+                text="Chyba při otevírání Excel souboru na vstup.",
+                text_color="red")
 
     def _choose_output_folder(self) -> None:
         """
@@ -101,13 +103,13 @@ class Dotacovatko(CTk):
         directory_path = Path(filedialog.askdirectory(initialdir=Path.cwd()))
 
         if directory_path:
-            if self._excel_processor.set_output_directory(directory_path):
-                self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: "
-                                                       f"{directory_path.name!s}",
-                                                  text_color="green")
-            else:
-                self._output_widgets[1].configure(text="Chyba při načítání složky pro výstup.",
-                                                  text_color="red")
+            self._excel_processor.set_output_directory(directory_path)
+            self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: "
+                                                    f"{directory_path.name!s}",
+                                              text_color="green")
+        else:
+            self._output_widgets[1].configure(text="Chyba při načítání složky pro výstup.",
+                                              text_color="red")
 
     def _threaded_start(self) -> None:
         self._start_widgets[1].configure(text="")
@@ -123,7 +125,7 @@ class Dotacovatko(CTk):
         background_thread.start()
 
     def _bg_processing(self) -> None:
-        download = self._excel_processor.load_template()
+        download: bool = self._excel_processor.load_template()
         if not download:
             self._progress_bar.stop()
             self._progress_bar.grid_forget()
@@ -132,7 +134,30 @@ class Dotacovatko(CTk):
                                              text_color="red")
             return
 
-        data_load = self._excel_processor.load_data()
+        data_load: bool = self._excel_processor.load_data()
+        if not data_load:
+            self._progress_bar.stop()
+            self._progress_bar.grid_forget()
+
+            self._start_widgets[1].configure(text="Chyba během načítání dat.",
+                                             text_color="red")
+
+        processed: bool = self._excel_processor.process_input_data()
+        if not processed:
+            self._progress_bar.stop()
+            self._progress_bar.grid_forget()
+
+            self._start_widgets[1].configure(text="Chyba během zpracování dat",
+                                             text_color="red")
+
+        self._progress_bar.stop()
+        self._progress_bar.grid_forget()
+
+        self._start_widgets[1].configure(text="Data úspěšně zpracována",
+                                         text_color="green")
+
+        SuccessHandler()
+
 
 if __name__ == "__main__":
     app = Dotacovatko()
