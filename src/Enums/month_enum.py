@@ -9,6 +9,8 @@ class MonthEnum(StrEnum):
     """
     Contains a mapping of sorts for translating English month names into Czech
     """
+    BLANK = ""
+    MONTH = "Měsíc:"
     JAN = "LEDEN",
     FEB = "ÚNOR",
     MAR = "BŘEZEN",

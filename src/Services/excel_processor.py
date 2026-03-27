@@ -13,7 +13,6 @@ from src.Enums.human_resources_headers_enum import HumanResourcesHeaders
 from src.Enums.month_headers_enum import MonthHeaders
 from src.Enums.quarter_enum import Quarters
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
-from src.Mappers.int_month_mapper import IntMonthMapper
 from src.Services.template_manager import TemplateManager
 from src.Utils.employee import Employee
 from src.Utils.error_handler import ErrorHandler
@@ -28,8 +27,6 @@ class ExcelProcessor:
         self.output_directory = None
         self.data: pd.ExcelFile | None = None
         self.template: pd.ExcelFile | None = None
-        self.template_employee_sheet: pd.DataFrame | None = None
-        self.template_intro_sheet: pd.DataFrame | None = None
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
         self._data_months: dict[str, pd.DataFrame | None] | None = None
@@ -101,7 +98,7 @@ class ExcelProcessor:
 
         row: int = 12
 
-        for _, employee in self.employee_data:
+        for employee in self.employee_data.values():
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       "",
@@ -128,7 +125,8 @@ class ExcelProcessor:
                                                       "",
                                                       EmployeeSheetHeaders.CONTRACT_START.value
                                                   ),
-                                                  value=employee.get_contract_start())
+                                                  row=row,
+                                                  value=employee.get_contract_start_date())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
@@ -136,14 +134,15 @@ class ExcelProcessor:
                                                       EmployeeSheetHeaders.CONTRACT_END.value
                                                   ),
                                                   row=row,
-                                                  value=employee.get_contract_end())
+                                                  value=employee.get_contract_end_date())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "",
                                                       EmployeeSheetHeaders.INSURANCE_COMPANY.value
                                                   ),
-                                                  value=employee.get_insurance_company())
+                                                  row=row,
+                                                  value=employee.get_insurance_code())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
@@ -151,14 +150,15 @@ class ExcelProcessor:
                                                       EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value
                                                   ),
                                                   row=row,
-                                                  value=employee.get_disability_recognition_from())
+                                                  value=employee.get_disability_recognised_from())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
                                                       "Měsíc:",
                                                       EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value
                                                   ),
-                                                  value=employee.get_disability_recognition_to())
+                                                  row=row,
+                                                  value=employee.get_disability_recognised_to())
 
             for month in self._data_months:
 
@@ -186,6 +186,7 @@ class ExcelProcessor:
                                                       ),
                                                       row=row,
                                                       value=employee.get_insurance_payment(month=MonthEnum(month)))
+                print(employee.get_surname())
                 self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                       col_header=
                                                       (
@@ -204,11 +205,6 @@ class ExcelProcessor:
 
         return True
 
-    def _clean_indexing(self):
-        self.template_employee_sheet.columns = pd.MultiIndex.from_tuples(
-            [("" if "Unnamed" in a else a, b) for a, b in self.template_employee_sheet.columns]
-        )
-
     def _process_employee_data(self) -> bool:
         """
         Processes employee data in the input sheet and inputs them into the template
@@ -218,7 +214,7 @@ class ExcelProcessor:
                                                 self.data.parse(self.data.sheet_names[1]),
                                                 self.data.parse(self.data.sheet_names[2])]
 
-        human_resources: pd.DataFrame = self.data.parse(io=self.data.sheet_names[3])
+        human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
 
         for idx, key in enumerate(self._data_months):
             self._data_months[key] = month_dataframes[idx]
@@ -248,11 +244,11 @@ class ExcelProcessor:
 
                     employee: Employee = Employee()
 
-                    employee.set_birth_num(row[MonthHeaders.BIRTH_NUM])
-                    employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START])
-                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END])
+                    employee.set_birth_num(row[MonthHeaders.BIRTH_NUM.value])
+                    employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START.value])
+                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END.value])
 
-                    employee.set_surname(hr_row[HumanResourcesHeaders.SURNAME])
+                    employee.set_surname(hr_row[HumanResourcesHeaders.SURNAME.value])
                     employee.set_first_name(hr_row[HumanResourcesHeaders.FIRST_NAME])
                     employee.set_insurance_code(hr_row[HumanResourcesHeaders.INSURANCE_COMPANY])
                     employee.set_disability_status(DisabilityStatus(hr_row[HumanResourcesHeaders.DISABILITY_STATUS]))
@@ -262,11 +258,11 @@ class ExcelProcessor:
                     employee = self.employee_data[personal_num]
 
                 employee.set_gross_pay(month,
-                                       float(row[MonthHeaders.GROSS_PAY]))
+                                       float(row[MonthHeaders.GROSS_PAY.value]))
                 employee.set_insurance_payment(month,
-                                               float(row[MonthHeaders.INSURANCE_PAYMENT]))
+                                               float(row[MonthHeaders.INSURANCE_PAYMENT.value]))
                 employee.set_pay_for_actual_work(month,
-                                                 float(row[MonthHeaders.PAY_FOR_ACTUAL_WORK]))
+                                                 float(row[MonthHeaders.PAY_FOR_ACTUAL_WORK.value]))
 
                 self.employee_data[personal_num] = employee
 
@@ -277,7 +273,8 @@ class ExcelProcessor:
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
         """
-        months: tuple[int, ...] = tuple(int(m.split("_")[0]) for m in self.data.sheet_names if "_" in m)
+        months: tuple[int, ...] = tuple(int(m.split("_")[0]) for
+                                        m in self.data.sheet_names if "_" in m)
         if months is None:
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                          error_message="Chyba během zpracování vstupního souboru, prosím "

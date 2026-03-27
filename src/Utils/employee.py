@@ -15,19 +15,18 @@ class Employee:
     before it is written into the government Excel template
     """
     def __init__(self):
-        self._surname: str | None = None
-        self._first_name: str | None = None
-        self._birth_num: str | None = None
-        self._contract_start_date: datetime | None = None
-        self._contract_end_date: datetime | None = None
-        self._insurance_code: int | None = None
-        self._disability_recognised_from: datetime | None = None
-        self._disability_recognised_to: datetime | None = None
-        self._disability_status: DisabilityStatus | None = None
-        self._gross_pay: dict[MonthEnum, float] | None = None
-        self._pay_for_actual_work: dict[MonthEnum, float] | None = None
-
-        self._insurance_payment: dict[MonthEnum, float] | None = None
+        self.__surname: str | None = None
+        self.__first_name: str | None = None
+        self.__birth_num: str | None = None
+        self.__contract_start_date: datetime | None = None
+        self.__contract_end_date: datetime | None = None
+        self.__insurance_code: int | None = None
+        self.__disability_recognised_from: datetime | None = None
+        self.__disability_recognised_to: datetime | None = None
+        self.__disability_status: DisabilityStatus | None = None
+        self.__gross_pay: dict[MonthEnum, float] = {}
+        self.__pay_for_actual_work: dict[MonthEnum, float] = {}
+        self.__insurance_payment: dict[MonthEnum, float] = {}
 
     def set_surname(self, surname: str) -> None:
         """
@@ -35,7 +34,7 @@ class Employee:
         :param surname: surname of the employee to save in the Employee instance
         :return: None
         """
-        self._surname = surname
+        self.__surname = surname
 
     def get_surname(self) -> str | None:
         """
@@ -43,12 +42,12 @@ class Employee:
         error to the user if it is, to ensure the user knows why the writing failed
         :return: surname of the employee if it exists, None otherwise
         """
-        if self._surname is None:
+        if self.__surname is None:
             ErrorHandler(error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                                        "zaměstnanec má na vstupu zadané příjmení a zkuste to "
                                        "prosím znovu.",
                          error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET)
-        return self._surname
+        return self.__surname
 
     def get_first_name(self) -> str:
         """
@@ -56,14 +55,14 @@ class Employee:
         an error to the user if it is, to ensure the user knows why the writing failed
         :return: first name of the employee if it exists, None otherwise
         """
-        if self._first_name is None:
+        if self.__first_name is None:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadané křestní jméno a zkuste to "
                 "prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-        return self._first_name
+        return self.__first_name
 
     def set_first_name(self, first_name: str) -> None:
         """
@@ -71,7 +70,7 @@ class Employee:
         :param first_name: first_name to assign to the employee instance
         :return: None
         """
-        self._first_name = first_name
+        self.__first_name = first_name
 
     def set_birth_num(self, birth_num: str) -> None:
         """
@@ -79,7 +78,7 @@ class Employee:
         :param birth_num: birth_num to assign to the employee instance
         :return: None
         """
-        self._birth_num = birth_num
+        self.__birth_num = birth_num
 
     def get_birth_num(self) -> str | None:
         """
@@ -87,7 +86,7 @@ class Employee:
         foreigners for example), it is not checked for blankness
         :return: birth number of the employee if it exists, None otherwise
         """
-        return self._birth_num
+        return self.__birth_num
 
     def set_contract_start_date(self, contract_start_date: datetime) -> None:
         """
@@ -95,7 +94,7 @@ class Employee:
         :param contract_start_date: date of contrast start to assign to the employee instance
         :return: None
         """
-        self._contract_start_date = contract_start_date
+        self.__contract_start_date = contract_start_date
 
     def get_contract_start_date(self) -> datetime | None:
         """
@@ -104,14 +103,14 @@ class Employee:
         failed
         :return: contract start date for the employee if it exists, None otherwise
         """
-        if self._contract_start_date is None:
+        if self.__contract_start_date is None:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadané datum vzniku pracovního poměru a zkuste to "
                 "prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-        return self._contract_start_date
+        return self.__contract_start_date
 
     def set_contract_end_date(self, contract_end_date: datetime) -> None:
         """
@@ -119,7 +118,7 @@ class Employee:
         :param contract_end_date: contract end date to assign to the employee instance
         :return: None
         """
-        self._contract_end_date = contract_end_date
+        self.__contract_end_date = contract_end_date
 
     def get_contract_end_date(self) -> datetime | None:
         """
@@ -127,7 +126,7 @@ class Employee:
         to fill in, this getter does not error when the attribute is None
         :return: contract end date for the employee if it exists, None otherwise
         """
-        return self._contract_end_date
+        return self.__contract_end_date
 
     def set_insurance_code(self, insurance_code: int) -> None:
         """
@@ -135,7 +134,7 @@ class Employee:
         :param insurance_code: insurance code to assign to the employee instance
         :return: None
         """
-        self._insurance_code = insurance_code
+        self.__insurance_code = insurance_code
 
     def get_insurance_code(self) -> int | None:
         """
@@ -143,14 +142,14 @@ class Employee:
         shows an error to the user if it is, to ensure the user knows why the writing failed
         :return: insurance code for the employee if it exists, None otherwise
         """
-        if self._insurance_code is None:
+        if self.__insurance_code is None:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadané číslo pojišťovny a zkuste to "
                 "prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-        return self._insurance_code
+        return self.__insurance_code
 
     def set_disability_recognised_from(self, disability_recognised_from: datetime) -> None:
         """
@@ -160,7 +159,7 @@ class Employee:
         disability is officially recognised from
         :return: None
         """
-        self._disability_recognised_from = disability_recognised_from
+        self.__disability_recognised_from = disability_recognised_from
 
     def get_disability_recognised_from(self) -> datetime | None:
         """
@@ -169,14 +168,14 @@ class Employee:
         why the writing failed
         :return: disability recognised from for the employee if it exists, None otherwise
         """
-        if self._disability_recognised_from is None:
+        if self.__disability_recognised_from is None:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadané odkdy je mu uznávána invalidita a zkuste to "
                 "prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-        return self._disability_recognised_from
+        return self.__disability_recognised_from
 
     def set_disability_recognised_to(self, disability_recognised_to: datetime) -> None:
         """
@@ -186,7 +185,7 @@ class Employee:
         disability is officially recognised from
         :return: None
         """
-        self._disability_recognised_to = disability_recognised_to
+        self.__disability_recognised_to = disability_recognised_to
 
     def get_disability_recognised_to(self) -> datetime | None:
         """
@@ -194,7 +193,7 @@ class Employee:
         mandatory to fill in, this getter does not error when the attribute is None
         :return: disability recognised to for the employee if it exists, None otherwise
         """
-        return self._disability_recognised_to
+        return self.__disability_recognised_to
 
     def set_disability_status(self, disability_status: DisabilityStatus) -> None:
         """
@@ -202,7 +201,7 @@ class Employee:
         :param disability_status: disability status to assign to the employee instance
         :return: None
         """
-        self._disability_status = disability_status
+        self.__disability_status = disability_status
 
     def get_disability_status(self) -> DisabilityStatus | None:
         """
@@ -211,14 +210,14 @@ class Employee:
         failed
         :return: disability status for the employee if it exists, None otherwise
         """
-        if self._disability_status is None:
+        if self.__disability_status is None:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                 "zaměstnanec má na vstupu zadaný status invalidity a zkuste to "
                 "prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-        return self._disability_status
+        return self.__disability_status
 
     def set_gross_pay(self, month: MonthEnum, pay: float) -> None:
         """
@@ -227,7 +226,7 @@ class Employee:
         :param pay: the employee's salary before tax
         :return: None
         """
-        self._gross_pay[month] = pay
+        self.__gross_pay[month] = pay
 
     def get_gross_pay(self, month: MonthEnum) -> float | None:
         """
@@ -238,14 +237,14 @@ class Employee:
         :return: gross pay for a given month for the employee if it exists, None otherwise
         """
         try:
-            if self._gross_pay[month] is None:
+            if self.__gross_pay[month] is None:
                 ErrorHandler(
                     error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                                   "zaměstnanec má na vstupu zadanou pro každý měsíc hrubou mzdu a "
                                   "zkuste to prosím znovu.",
                     error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
                 )
-            return self._gross_pay[month]
+            return self.__gross_pay[month]
         except KeyError:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
@@ -262,9 +261,12 @@ class Employee:
         :param pay: how much the employee was paid for actual work
         :return: None
         """
-        self._pay_for_actual_work[month] = pay
+        if pay:
+            self.__pay_for_actual_work[month] = pay
+        else:
+            self.__pay_for_actual_work[month] = 0
 
-    def get_pay_for_actual_work(self, month: MonthEnum) -> float | None:
+    def get_pay_for_actual_work(self, month: MonthEnum) -> float:
         """
         Getter for the pay_for_actual_work attribute, checks whether pay for_actual_work is blank
         and since this attribute is mandatory (the government Excel template requires it), errors
@@ -273,22 +275,16 @@ class Employee:
         :return: pay for a given month for the employee if it exists, None otherwise
         """
         try:
-            if self._pay_for_actual_work[month] is None:
+            if self.__pay_for_actual_work[month] is None:
                 ErrorHandler(
                     error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                                   "zaměstnanec má na vstupu zadanou pro každý měsíc základní mzdu "
                                   "a zkuste to prosím znovu.",
                     error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
                 )
-            return self._pay_for_actual_work[month]
+            return self.__pay_for_actual_work[month]
         except KeyError:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                              "zaměstnanec má na vstupu zadanou pro každý měsíc základní mzdu "
-                              "a zkuste to prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
-            return None
+            return 0
 
     def set_insurance_payment(self, month: MonthEnum, insurance_payment: float) -> None:
         """
@@ -299,7 +295,7 @@ class Employee:
         :param insurance_payment: amount of money paid
         :return: None
         """
-        self._insurance_payment[month] = insurance_payment
+        self.__insurance_payment[month] = insurance_payment
 
     def get_insurance_payment(self, month: MonthEnum) -> float | None:
         """
@@ -312,14 +308,14 @@ class Employee:
         otherwise
         """
         try:
-            if self._insurance_payment[month] is None:
+            if self.__insurance_payment[month] is None:
                 ErrorHandler(
                     error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
                                   "zaměstnanec má na vstupu zadán pro každý měsíc odvod pojistného"
                                   " a zkuste to prosím znovu.",
                     error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
                 )
-            return self._insurance_payment[month]
+            return self.__insurance_payment[month]
         except KeyError:
             ErrorHandler(
                 error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "

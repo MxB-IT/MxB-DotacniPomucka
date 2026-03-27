@@ -7,11 +7,15 @@ import re
 import tempfile
 import time
 import zipfile
+from datetime import datetime
+from enum import Enum
 from pathlib import Path
 
-import pandas as pd
+import openpyxl
 import requests
 
+from src.Enums import MonthEnum, TemplateSheetNames
+from src.Enums.employee_sheet_headers import EmployeeSheetHeaders
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Utils.error_handler import ErrorHandler
 
@@ -23,21 +27,21 @@ class TemplateManager:
     it does not download anything, using the already downloaded file
     """
     def __init__(self, template_url: str):
-        self._url: str = template_url
-        self._app_name: Path = Path("Dotacovatko")
-        self.path: Path = self._get_writable_path()
-        self.template: pd.ExcelFile | None = None
-        self._work_sheets: dict[str, pd.DataFrame] | None = None
+        self.__url: str = template_url
+        self.__app_name: Path = Path("Dotacovatko")
+        self.path: Path = self.__get_writable_path()
+        self.template: openpyxl.Workbook | None = None
+        self.__col_mapping: dict[tuple[str, tuple[str, str]], int] = {}
 
-    def _get_writable_path(self) -> Path:
+    def __get_writable_path(self) -> Path:
         """
         This method finds the best place to store the template file, it goes
         APPPDATA -> Documents -> system temp
         :return: filepath which will be written into
         """
-        appdata: Path = os.environ.get("LOCALAPPDATA", "") / self._app_name
-        documents: Path = Path("~").expanduser() / Path("Documents") / self._app_name
-        system_temp: Path = Path(tempfile.gettempdir()) / self._app_name
+        appdata: Path = os.environ.get("LOCALAPPDATA", "") / self.__app_name
+        documents: Path = Path("~").expanduser() / Path("Documents") / self.__app_name
+        system_temp: Path = Path(tempfile.gettempdir()) / self.__app_name
 
         for path in [appdata, documents, system_temp]:
             try:
@@ -54,7 +58,7 @@ class TemplateManager:
         raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a "
                               "uložit Excel MPSV.")
 
-    def _is_template_ready(self) -> bool:
+    def __is_template_ready(self) -> bool:
         """
         Checks whether the template has already been downloaded
         :return: True if it has already been downloaded, False otherwise
@@ -66,18 +70,18 @@ class TemplateManager:
         Downloads the template file from the URL and stores it in the specified filepath
         :return: True if the download succeeds, false otherwise
         """
-        if self._is_template_ready():
-            self._scrub_template()
+        if self.__is_template_ready():
+            self.__scrub_template()
             return True
 
         try:
-            response = requests.get(self._url, timeout=5)
+            response = requests.get(self.__url, timeout=5)
             response.raise_for_status()
 
             with self.path.open("wb") as file:
                 file.write(response.content)
 
-            return self._scrub_template()
+            return self.__scrub_template()
 
         except requests.exceptions.Timeout:
             ErrorHandler(
@@ -102,7 +106,7 @@ class TemplateManager:
             )
             return False
 
-    def _scrub_template(self) -> bool:
+    def __scrub_template(self) -> bool:
         """
         Removes certain metadata from the template that caused an error when opening
         :return: bool indicating success or failure
@@ -136,10 +140,9 @@ class TemplateManager:
             return False
 
     def write_into_cell(self, sheet_name: str,
-                        value: str | int | float,
-                        row: int | None = None,
+                        value: str | int | float | datetime,
+                        row: int,
                         col: int | None = None,
-                        row_header: str | tuple[str, str] | None = None,
                         col_header: str | tuple[str, str] | None = None) -> bool:
         """
         Method used for writing into a certain cell of the template
@@ -147,24 +150,24 @@ class TemplateManager:
         :param value: value to put into the cell
         :param row: row the cell is in as an integer
         :param col: column the cell is in as an integer
-        :param row_header: header of the row the cell is in, its key
         :param col_header: header of the column the cell is in, its key
         :return: boolean representing the success or failure of the write
         """
         try:
-            sheet = self._get_sheet(sheet_name)
+            sheet = self.template[sheet_name]
 
-            row_idx = sheet.index(row) if row is not None else row_header
-            col_idx = sheet.columns[col] if col is not None else col_header
+            if col_header:
+                col = self.__col_mapping.get((sheet_name, col_header))
 
-            if row_idx is None or col_idx is None:
+            if row is None or col is None:
                 ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                              error_message="Interní chyba proramu, zkuste to prosím znovu.")
-            sheet.at[row_idx, col_idx] = value
+            sheet.cell(row, col).value = value
+
+            return True
 
         except (IndexError, KeyError, TypeError, AttributeError):
             return False
-        return True
 
     def write_file(self, destination: Path) -> bool:
         """
@@ -177,14 +180,7 @@ class TemplateManager:
 
         try:
             destination.parent.mkdir(parents=True, exist_ok=True)
-
-            with pd.ExcelWriter(destination, engine="openpyxl") as writer:
-                for sheet_name in self.template.sheet_names:
-                    df = self._work_sheets.get(sheet_name)
-                    if df is None:
-                        df = self.template.parse(sheet_name)
-
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            self.template.save(destination)
 
             return True
 
@@ -199,19 +195,64 @@ class TemplateManager:
         :return: bool indicating success or failure of the load
         """
         try:
-            self.template = pd.ExcelFile(path_or_buffer=self.path)
+            self.template = openpyxl.load_workbook(filename=self.path,
+                                                   data_only=False)
+
+            self.__build_col_map(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
+                                 first_level=MonthEnum,
+                                 second_level=EmployeeSheetHeaders)
             return True
         except Exception:
             return False
 
-    def _get_sheet(self, sheet_name: str) -> pd.DataFrame:
+    def __build_col_map(self,
+                        sheet_name: str,
+                        first_level: type[Enum],
+                        second_level: type[Enum]) -> None:
         """
-        Internal helper method for getting the specified sheet from the internal work cache or
-        parsing it from the ExcelFile if not yet loaded
-        :param sheet_name: sheet to be retrieved
-        :return: DataFrame of the sheet requested
+        Builds the column map for openpyxl to later use when writing into the template
+        :param sheet_name: sheet for which the column map is to be built
+        :param first_level: first index of the multiIndex value
+        :param second_level: second index of the multiIndex value
+        :return:
         """
-        if sheet_name not in self._work_sheets:
-            self._work_sheets[sheet_name] = self.template.parse(sheet_name)
+        ws = self.template[sheet_name]
 
-        return self._work_sheets[sheet_name]
+        current_level1: str = ""
+        found: bool = False
+
+        for second_level_val in second_level:
+            print(second_level_val.value)
+            for first_level_val in first_level:
+                for row in range(1, ws.max_row):
+                    for col in range(1, ws.max_column + 1):
+                        level1 = ws.cell(row=row, column=col).value
+                        level2 = ws.cell(row=row + 1, column=col).value or ""
+
+                        if level1 is None:
+                            if first_level_val == MonthEnum.BLANK:
+                                current_level1 = ""
+                            else:
+                                continue
+
+                        else:
+                            current_level1 = level1
+
+                        if row == 11:
+                            print(
+                                f"level1={current_level1}, level2={level2}\nfirst_val={first_level_val.value}, second_val={second_level_val.value}\nrow={row}, col={col}\nmap={self.__col_mapping}"
+                            )
+
+                        if current_level1 == first_level_val.value and level2 == second_level_val.value:
+                            self.__col_mapping[sheet_name, (current_level1, level2)] = col
+                            found = True
+                            print("1st break")
+                            break
+
+                    if found:
+                        print("2nd break")
+                        break
+                if found:
+                    print("3rd break")
+                    found = False
+                    break
