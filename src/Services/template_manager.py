@@ -2,20 +2,24 @@
 This module contains the definition of the TamplateManager class, used to download and prep the
 government ministry's Excel template
 """
+import io
 import os
 import re
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime
 from enum import Enum
+from io import BytesIO
 from pathlib import Path
 
 import openpyxl
 import requests
+import xlwings as xw
+from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
-from src.Enums import MonthEnum, TemplateSheetNames
-from src.Enums.employee_sheet_headers import EmployeeSheetHeaders
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Utils.error_handler import ErrorHandler
 
@@ -31,7 +35,7 @@ class TemplateManager:
         self.__app_name: Path = Path("Dotacovatko")
         self.path: Path = self.__get_writable_path()
         self.template: openpyxl.Workbook | None = None
-        self.__col_mapping: dict[tuple[str, tuple[str, str]], int] = {}
+        self.__col_mapping: dict[tuple[str, tuple[str, ...]], int] = {}
 
     def __get_writable_path(self) -> Path:
         """
@@ -107,39 +111,55 @@ class TemplateManager:
             return False
 
     def __scrub_template(self) -> bool:
-        """
-        Removes certain metadata from the template that caused an error when opening
-        :return: bool indicating success or failure
-        """
-        temp_file: Path = self.path.with_suffix(".tmp")
-
         try:
-            with zipfile.ZipFile(self.path, "r") as zin, zipfile.ZipFile(temp_file, "w") as zout:
-                for item in zin.infolist():
-                    data = zin.read(item.filename)
+            # 1. Read the original into memory
+            with self.path.open("rb") as f:
+                original_data = f.read()
 
-                    if item.filename == "xl/workbook.xml":
-                        xml_content = data.decode("utf-8")
-                        xml_content = re.sub(r"<definedNames>.*?</definedNames>",
-                                             "",
-                                             xml_content,
-                                             flags=re.DOTALL)
-                        data = xml_content.encode("utf-8")
+            in_buffer = io.BytesIO(original_data)
+            out_buffer = io.BytesIO()
 
-                    zout.writestr(item, data)
+            with zipfile.ZipFile(in_buffer, "r") as zin:
+                # We don't set a global compression here; we'll inherit from each file
+                with zipfile.ZipFile(out_buffer, "w") as zout:
+                    for item in zin.infolist():
+                        # Read the raw content
+                        content = zin.read(item.filename)
 
-            temp_file.replace(self.path)
+                        if item.filename == "xl/workbook.xml":
+                            # Perform the scrub
+                            # This regex is very specific to ensure we don't break the XML structure
+                            pattern = rb"<definedName [^>]*>#N/A</definedName>"
+                            if re.search(pattern, content):
+                                content = re.sub(pattern, b"", content)
+
+                        # CRITICAL: We create a new ZipInfo to reset the CRC/Size
+                        # BUT we copy the compression type from the original item
+                        new_item = zipfile.ZipInfo(item.filename)
+                        new_item.compress_type = item.compress_type
+                        new_item.create_system = item.create_system
+
+                        # Write it back using the original compression method
+                        zout.writestr(new_item, content)
+
+            # 2. Check the size again. A small drop (bytes) is fine.
+            # A 1MB drop means we failed to copy a folder.
+            final_bytes = out_buffer.getvalue()
+
+            # If it's still way smaller, the ZIP library is failing to see some parts.
+            print(f"Original size: {len(original_data)} | New size: {len(final_bytes)}")
+
+            with self.path.open("wb") as f:
+                f.write(final_bytes)
+
             return True
-        except (FileNotFoundError, PermissionError, OSError,
-                zipfile.BadZipFile, zipfile.LargeZipFile):
-            if temp_file.exists():
-                temp_file.unlink()
 
-            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
-                         error_message="Chyba při načítání šablony, zkuste to prosím znovu")
+        except Exception as e:
+            print(f"Patching failed: {e}")
             return False
 
-    def write_into_cell(self, sheet_name: str,
+    def write_into_cell(self,
+                        sheet_name: str,
                         value: str | int | float | datetime,
                         row: int,
                         col: int | None = None,
@@ -198,61 +218,90 @@ class TemplateManager:
             self.template = openpyxl.load_workbook(filename=self.path,
                                                    data_only=False)
 
-            self.__build_col_map(sheet_name=TemplateSheetNames.EMPLOYEE_LIST,
-                                 first_level=MonthEnum,
-                                 second_level=EmployeeSheetHeaders)
             return True
-        except Exception:
+        except Exception as e:
+            print(f"Failed, {e}")
             return False
 
-    def __build_col_map(self,
-                        sheet_name: str,
-                        first_level: type[Enum],
-                        second_level: type[Enum]) -> None:
+    def build_col_map(self,
+                      sheet_name: str,
+                      headers: tuple[tuple[str, ...], ...],
+                      max_row: int = 30) -> None:
         """
         Builds the column map for openpyxl to later use when writing into the template
         :param sheet_name: sheet for which the column map is to be built
-        :param first_level: first index of the multiIndex value
-        :param second_level: second index of the multiIndex value
+        :param headers: headers of the columns to be found
+        :param max_row: maximum row to search for headers
         :return:
         """
-        ws = self.template[sheet_name]
+        temp: Workbook = openpyxl.load_workbook(filename=self.path,data_only=True)
+        ws = temp[sheet_name]
 
-        current_level1: str = ""
-        found: bool = False
+        for header in headers:
+            col: int | None = self.__find_column_by_header(ws=ws,
+                                                           header=header,
+                                                           max_row=max_row)
 
-        for second_level_val in second_level:
-            print(second_level_val.value)
-            for first_level_val in first_level:
-                for row in range(1, ws.max_row):
-                    for col in range(1, ws.max_column + 1):
-                        level1 = ws.cell(row=row, column=col).value
-                        level2 = ws.cell(row=row + 1, column=col).value or ""
+            if col:
+                self.__col_mapping[(sheet_name, header)] = col
+                print(self.__col_mapping)
+            else:
+                print(f"well, fuck, {header}")
 
-                        if level1 is None:
-                            if first_level_val == MonthEnum.BLANK:
-                                current_level1 = ""
-                            else:
-                                continue
+        temp.close()
 
-                        else:
-                            current_level1 = level1
 
-                        if row == 11:
-                            print(
-                                f"level1={current_level1}, level2={level2}\nfirst_val={first_level_val.value}, second_val={second_level_val.value}\nrow={row}, col={col}\nmap={self.__col_mapping}"
-                            )
+    @staticmethod
+    def __find_column_by_header(ws: Worksheet,
+                                header: str | tuple | Enum,
+                                max_row: int) -> int | None:
+        """
+        Locates a column by the header (or headers in the case of a multiIndex sheet) provided
+        :param ws: worksheet to search
+        :param header: header to look out for
+        :return: int if it finds the column successfully, None otherwise
+        """
+        if isinstance(header, Enum):
+            search_terms = (str(header.value).strip(),)
+        elif isinstance(header, str):
+            search_terms = (header.strip(),)
+        else:
+            search_terms = tuple(str(item).strip() for item in header)
 
-                        if current_level1 == first_level_val.value and level2 == second_level_val.value:
-                            self.__col_mapping[sheet_name, (current_level1, level2)] = col
-                            found = True
-                            print("1st break")
-                            break
+        depth = len(search_terms)
 
-                    if found:
-                        print("2nd break")
-                        break
-                if found:
-                    print("3rd break")
-                    found = False
-                    break
+        for col in range(1, ws.max_column + 1):
+            for row in range(1, max_row):
+
+                actual_headers = tuple(
+                    str(ws.cell(row=row + i, column=col).value or "").strip() for i in range(depth)
+                )
+
+                if actual_headers == search_terms:
+                    return col
+
+        return None
+
+    def reload_template(self) -> bool:
+        """
+        Saves the loaded template workbook back onto the disk and forces the formulas inside to run
+        and update the sheets accordingly
+        """
+        try:
+            print(f"reloading, {self.path}")
+            self.template.save(self.path)
+
+            with xw.App(visible=False) as app:
+                book = xw.Book(self.path)
+                app.calculate()
+                book.save()
+                book.close()
+
+            self.template = openpyxl.load_workbook(self.path,
+                                                   data_only=False)
+            print("done")
+            return True
+        except (PermissionError, OSError):
+            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                         error_message="TODO")
+            return False

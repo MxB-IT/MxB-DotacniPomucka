@@ -9,6 +9,8 @@ class EmployeeSheetHeaders(StrEnum):
     """
     This enum contains all the relevant column headers present in the employee sheet
     """
+    BLANK = ""
+    MONTH = "Měsíc:"
     SURNAME = "Příjmení"
     FIRST_NAME = "Jméno"
     BIRTH_NUM = "Rodné číslo"

@@ -29,9 +29,9 @@ class ExcelProcessor:
         self.template: pd.ExcelFile | None = None
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
-        self._data_months: dict[str, pd.DataFrame | None] | None = None
-        self._year: int | None = None
-        self._quarter: int | None = None
+        self.__data_months: dict[str, pd.DataFrame | None] | None = None
+        self.__year: int | None = None
+        self.__quarter: int | None = None
 
     def set_input(self, file_path: Path) -> None:
         """
@@ -91,38 +91,48 @@ class ExcelProcessor:
         Processes the input Excel file and populates the template with data extracted from it
         :return: bool indicating success or failure
         """
-        if not self._set_year_and_quarter():
-            print("fuck")
+        if not self.__set_year_and_quarter():
+            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                         error_message="TODO")
+            return False
 
-        self._process_employee_data()
+        if not self.template_manager.reload_template():
+            return False
+
+        headers: tuple[tuple[str, ...], ...] = self.__construct_headers()
+
+        self.template_manager.build_col_map(TemplateSheetNames.EMPLOYEE_LIST.value,
+                                            headers)
+
+        self.__process_employee_data()
 
         row: int = 12
 
         for employee in self.employee_data.values():
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.FIRST_NAME.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_first_name())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.SURNAME.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_surname())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.BIRTH_NUM.value
                                                   ),
                                                   row=row,
                                                   value=employee.get_birth_num())
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.CONTRACT_START.value
                                                   ),
                                                   row=row,
@@ -130,7 +140,7 @@ class ExcelProcessor:
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.CONTRACT_END.value
                                                   ),
                                                   row=row,
@@ -138,7 +148,7 @@ class ExcelProcessor:
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.INSURANCE_COMPANY.value
                                                   ),
                                                   row=row,
@@ -146,7 +156,7 @@ class ExcelProcessor:
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=
                                                   (
-                                                      "",
+                                                      EmployeeSheetHeaders.BLANK.value,
                                                       EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value
                                                   ),
                                                   row=row,
@@ -160,7 +170,7 @@ class ExcelProcessor:
                                                   row=row,
                                                   value=employee.get_disability_recognised_to())
 
-            for month in self._data_months:
+            for month in self.__data_months:
 
                 self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                       col_header=
@@ -201,11 +211,11 @@ class ExcelProcessor:
             row += 1
 
 
-        self._save_processed(f"{self._quarter}Q{self._year}seznam+zaměstnanců+OZP.xlsx")
+        self.__save_processed(f"{self.__quarter}Q{self.__year}seznam+zaměstnanců+OZP.xlsx")
 
         return True
 
-    def _process_employee_data(self) -> bool:
+    def __process_employee_data(self) -> bool:
         """
         Processes employee data in the input sheet and inputs them into the template
         :return: bool indicating success or failure
@@ -216,10 +226,10 @@ class ExcelProcessor:
 
         human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
 
-        for idx, key in enumerate(self._data_months):
-            self._data_months[key] = month_dataframes[idx]
+        for idx, key in enumerate(self.__data_months):
+            self.__data_months[key] = month_dataframes[idx]
 
-        for month_key, month_sheet in self._data_months.items():
+        for month_key, month_sheet in self.__data_months.items():
             if month_sheet is None:
                 continue
 
@@ -268,7 +278,7 @@ class ExcelProcessor:
 
         return True
 
-    def _set_year_and_quarter(self) -> bool:
+    def __set_year_and_quarter(self) -> bool:
         """
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
@@ -281,45 +291,46 @@ class ExcelProcessor:
                                        "zkontrolujte formát Excelu na vstupu programu.")
             return False
 
-        self._year = int(self.data.sheet_names[0].split("_")[1])
+        self.__year = int(self.data.sheet_names[0].split("_")[1])
 
         match months:
             case Quarters.FIRST_QUARTER.value:
-                self._quarter = 1
-                self._data_months = {MonthEnum.JAN.value : None,
-                                     MonthEnum.FEB.value : None,
-                                     MonthEnum.MAR.value : None}
+                self.__quarter = 1
+                self.__data_months = {MonthEnum.JAN.value : None,
+                                      MonthEnum.FEB.value : None,
+                                      MonthEnum.MAR.value : None}
             case Quarters.SECOND_QUARTER.value:
-                self._quarter = 2
-                self._data_months = {MonthEnum.APR.value : None,
-                                     MonthEnum.MAY.value : None,
-                                     MonthEnum.JUN.value : None}
+                self.__quarter = 2
+                self.__data_months = {MonthEnum.APR.value : None,
+                                      MonthEnum.MAY.value : None,
+                                      MonthEnum.JUN.value : None}
             case Quarters.THIRD_QUARTER.value:
-                self._quarter = 3
-                self._data_months = {MonthEnum.JUL.value : None,
-                                     MonthEnum.AUG.value : None,
-                                     MonthEnum.SEP.value : None}
+                self.__quarter = 3
+                self.__data_months = {MonthEnum.JUL.value : None,
+                                      MonthEnum.AUG.value : None,
+                                      MonthEnum.SEP.value : None}
             case Quarters.FOURTH_QUARTER.value:
-                self._quarter = 4
-                self._data_months = {MonthEnum.OCT.value : None,
-                                     MonthEnum.NOV.value : None,
-                                     MonthEnum.DEC.value : None}
+                self.__quarter = 4
+                self.__data_months = {MonthEnum.OCT.value : None,
+                                      MonthEnum.NOV.value : None,
+                                      MonthEnum.DEC.value : None}
             case _:
                 return False
 
+        print(f"quarter = {self.__quarter}, year = {self.__year}")
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
-                                              value=self._quarter,
-                                              row=5,
-                                              col=3)
+                                              value=self.__quarter,
+                                              row=6,
+                                              col=4)
 
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
-                                              value=self._year,
-                                              row=5,
-                                              col=8)
+                                              value=self.__year,
+                                              row=6,
+                                              col=9)
 
         return True
 
-    def _save_processed(self, filename: str) -> bool:
+    def __save_processed(self, filename: str) -> bool:
         """
         Saves the processed data into an Excel file with a specified filename
         :param filename: desired name of the output file
@@ -337,3 +348,43 @@ class ExcelProcessor:
             final_path = final_path.with_suffix(".xlsx")
 
         return self.template_manager.write_file(final_path)
+
+    def __construct_headers(self) -> tuple[tuple[str, ...], ...]:
+        months: tuple[str, str, str] | None = None
+        match self.__quarter:
+            case 1:
+                months = (MonthEnum.JAN.value,
+                          MonthEnum.FEB.value,
+                          MonthEnum.MAR.value)
+            case 2:
+                months = (MonthEnum.APR.value,
+                          MonthEnum.MAY.value,
+                          MonthEnum.JUN.value)
+            case 3:
+                months = (MonthEnum.JUL.value,
+                          MonthEnum.AUG.value,
+                          MonthEnum.SEP.value)
+            case 4:
+                months = (MonthEnum.OCT.value,
+                          MonthEnum.NOV.value,
+                          MonthEnum.DEC.value)
+
+        return (
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.SURNAME.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.FIRST_NAME.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.BIRTH_NUM.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.CONTRACT_START.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.CONTRACT_END.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.INSURANCE_COMPANY.value),
+            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value),
+            (EmployeeSheetHeaders.MONTH.value, EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value),
+            (months[0], EmployeeSheetHeaders.DISABILITY_STATUS.value),
+            (months[0], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[0], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value),
+            (months[1], EmployeeSheetHeaders.DISABILITY_STATUS.value),
+            (months[1], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[1], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value),
+            (months[2], EmployeeSheetHeaders.DISABILITY_STATUS.value),
+            (months[2], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[2], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value)
+        )
