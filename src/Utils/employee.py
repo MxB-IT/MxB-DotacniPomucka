@@ -228,7 +228,7 @@ class Employee:
         """
         self.__gross_pay[month] = pay
 
-    def get_gross_pay(self, month: MonthEnum) -> float | None:
+    def get_gross_pay(self, month: MonthEnum) -> float:
         """
         Getter for the gross_pay for a given month private attribute, checks whether pay for the
         month is blank and shows an error to the user if it is, to ensure the user knows why the
@@ -252,7 +252,7 @@ class Employee:
                 "zkuste to prosím znovu.",
                 error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
             )
-            return None
+            return 0
 
     def set_pay_for_actual_work(self, month: MonthEnum, pay: float) -> None:
         """
@@ -297,7 +297,7 @@ class Employee:
         """
         self.__insurance_payment[month] = insurance_payment
 
-    def get_insurance_payment(self, month: MonthEnum) -> float | None:
+    def get_insurance_payment(self, month: MonthEnum) -> float:
         """
         Getter for the insurance payment for a given month private attribute, checks whether
         insurance payment for the month is blank and shows an error to the user if it is, to ensure
@@ -317,10 +317,4 @@ class Employee:
                 )
             return self.__insurance_payment[month]
         except KeyError:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadán pro každý měsíc odvod pojistného "
-                "a zkuste to prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
-            return None
+            return 0

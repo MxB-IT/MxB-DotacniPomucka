@@ -7,16 +7,16 @@ import os
 import re
 import tempfile
 import time
-import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime
 from enum import Enum
-from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import openpyxl
 import requests
 import xlwings as xw
+from openpyxl.cell import Cell, MergedCell
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -120,7 +120,6 @@ class TemplateManager:
             out_buffer = io.BytesIO()
 
             with zipfile.ZipFile(in_buffer, "r") as zin:
-                # We don't set a global compression here; we'll inherit from each file
                 with zipfile.ZipFile(out_buffer, "w") as zout:
                     for item in zin.infolist():
                         # Read the raw content
@@ -163,7 +162,7 @@ class TemplateManager:
                         value: str | int | float | datetime,
                         row: int,
                         col: int | None = None,
-                        col_header: str | tuple[str, str] | None = None) -> bool:
+                        col_header: str | tuple[str, ...] | None = None) -> bool:
         """
         Method used for writing into a certain cell of the template
         :param sheet_name: sheet the cell is in
@@ -177,11 +176,17 @@ class TemplateManager:
             sheet = self.template[sheet_name]
 
             if col_header:
-                col = self.__col_mapping.get((sheet_name, col_header))
+                if isinstance(col_header, (str, Enum)):
+                    lookup_header = (str(col_header).strip(),)
+                else:
+                    lookup_header = tuple(str(h).strip() for h in col_header)
+
+                col = self.__col_mapping[(sheet_name, lookup_header)]
 
             if row is None or col is None:
-                ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                             error_message="Interní chyba proramu, zkuste to prosím znovu.")
+                ErrorHandler(error_code=ErrNoEnum.INTERNAL_ERROR,
+                             error_message="Interní chyba programu, zkuste to prosím znovu.")
+                return False
             sheet.cell(row, col).value = value
 
             return True
@@ -244,15 +249,16 @@ class TemplateManager:
 
             if col:
                 self.__col_mapping[(sheet_name, header)] = col
-                print(self.__col_mapping)
+                #print(self.__col_mapping)
             else:
                 print(f"well, fuck, {header}")
 
         temp.close()
 
 
-    @staticmethod
-    def __find_column_by_header(ws: Worksheet,
+
+    def __find_column_by_header(self,
+                                ws: Worksheet,
                                 header: str | tuple | Enum,
                                 max_row: int) -> int | None:
         """
@@ -274,7 +280,9 @@ class TemplateManager:
             for row in range(1, max_row):
 
                 actual_headers = tuple(
-                    str(ws.cell(row=row + i, column=col).value or "").strip() for i in range(depth)
+                    str(self.__get_cell_value(ws=ws,
+                                              row=row+i,
+                                              col=col) or "").strip() for i in range(depth)
                 )
 
                 if actual_headers == search_terms:
@@ -299,9 +307,28 @@ class TemplateManager:
 
             self.template = openpyxl.load_workbook(self.path,
                                                    data_only=False)
-            print("done")
             return True
         except (PermissionError, OSError):
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                          error_message="TODO")
             return False
+
+    @staticmethod
+    def __get_cell_value(ws: Worksheet, row: int, col: int) -> Any:
+        """
+        Defines logic for getting the value of a cell, custom logic is required to handle merged
+        cells
+        :param ws: worksheet in which the cell is located
+        :param row: row of the cell
+        :param col: column of the cell
+        :return: Whatever the cell contains
+        """
+        cell: Cell | MergedCell = ws.cell(row=row, column=col)
+
+        for merged_range in ws.merged_cells.ranges:
+            if cell.coordinate in merged_range:
+                return_val: Any = ws.cell(row=merged_range.min_row,
+                                          column=merged_range.min_col).value
+                return return_val
+
+        return cell.value

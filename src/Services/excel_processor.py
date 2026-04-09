@@ -96,6 +96,11 @@ class ExcelProcessor:
                          error_message="TODO")
             return False
 
+        if self.template_manager == None:
+            ErrorHandler(error_code=ErrNoEnum.INTERNAL_ERROR,
+                         error_message="Interní chyba programu, zkuste to prosím znovu")
+            return False
+
         if not self.template_manager.reload_template():
             return False
 
@@ -106,7 +111,7 @@ class ExcelProcessor:
 
         self.__process_employee_data()
 
-        row: int = 12
+        row: int = 13
 
         for employee in self.employee_data.values():
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
@@ -196,7 +201,6 @@ class ExcelProcessor:
                                                       ),
                                                       row=row,
                                                       value=employee.get_insurance_payment(month=MonthEnum(month)))
-                print(employee.get_surname())
                 self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                       col_header=
                                                       (
@@ -220,9 +224,9 @@ class ExcelProcessor:
         Processes employee data in the input sheet and inputs them into the template
         :return: bool indicating success or failure
         """
-        month_dataframes: list[pd.DataFrame] = [self.data.parse(self.data.sheet_names[0]),
-                                                self.data.parse(self.data.sheet_names[1]),
-                                                self.data.parse(self.data.sheet_names[2])]
+        month_dataframes = [self.data.parse(self.data.sheet_names[0]),
+                            self.data.parse(self.data.sheet_names[1]),
+                            self.data.parse(self.data.sheet_names[2])]
 
         human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
 
@@ -237,6 +241,9 @@ class ExcelProcessor:
 
             for _, row in month_sheet.iterrows():
                 personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
+
+                if personal_num == 2001037:
+                    pass
 
                 if personal_num not in self.employee_data:
                     hr_matches: pd.DataFrame = human_resources.loc[
@@ -317,7 +324,13 @@ class ExcelProcessor:
             case _:
                 return False
 
-        print(f"quarter = {self.__quarter}, year = {self.__year}")
+        if self.__quarter is None or self.__year is None:
+            ErrorHandler(
+                error_code=ErrNoEnum.INTERNAL_ERROR,
+                error_message="Vnitřní chyba programu, zkuste to prosím znovu"
+            )
+            return False
+
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
                                               value=self.__quarter,
                                               row=6,
@@ -380,11 +393,14 @@ class ExcelProcessor:
             (EmployeeSheetHeaders.MONTH.value, EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value),
             (months[0], EmployeeSheetHeaders.DISABILITY_STATUS.value),
             (months[0], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[0], EmployeeSheetHeaders.INSURANCE_PAYMENT.value),
             (months[0], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value),
             (months[1], EmployeeSheetHeaders.DISABILITY_STATUS.value),
             (months[1], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[1], EmployeeSheetHeaders.INSURANCE_PAYMENT.value),
             (months[1], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value),
             (months[2], EmployeeSheetHeaders.DISABILITY_STATUS.value),
             (months[2], EmployeeSheetHeaders.GROSS_PAY.value),
+            (months[2], EmployeeSheetHeaders.INSURANCE_PAYMENT.value),
             (months[2], EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value)
         )
