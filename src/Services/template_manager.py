@@ -20,6 +20,7 @@ from openpyxl.cell import Cell, MergedCell
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Utils.error_handler import ErrorHandler
 
@@ -159,7 +160,7 @@ class TemplateManager:
 
     def write_into_cell(self,
                         sheet_name: str,
-                        value: str | int | float | datetime,
+                        value: str | int | float | datetime | DisabilityStatus,
                         row: int,
                         col: int | None = None,
                         col_header: str | tuple[str, ...] | None = None) -> bool:

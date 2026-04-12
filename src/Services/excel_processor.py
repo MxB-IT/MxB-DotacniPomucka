@@ -96,12 +96,15 @@ class ExcelProcessor:
                          error_message="TODO")
             return False
 
-        if self.template_manager == None:
+        if self.template_manager is None:
             ErrorHandler(error_code=ErrNoEnum.INTERNAL_ERROR,
                          error_message="Interní chyba programu, zkuste to prosím znovu")
             return False
 
         if not self.template_manager.reload_template():
+            return False
+
+        if self.__data_months is None:
             return False
 
         headers: tuple[tuple[str, ...], ...] = self.__construct_headers()
@@ -114,6 +117,47 @@ class ExcelProcessor:
         row: int = 13
 
         for employee in self.employee_data.values():
+
+            if not employee.was_active_in_quarter(months=self.__data_months):
+                continue
+
+            for month in self.__data_months:
+
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.DISABILITY_STATUS.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_disability_status())
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.GROSS_PAY.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_gross_pay(month=MonthEnum(month)))
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.INSURANCE_PAYMENT.value
+                                                      ),
+                                                      row=row,
+                                                      value=employee.get_insurance_payment(month=MonthEnum(month)))
+                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                                                      col_header=
+                                                      (
+                                                          month,
+                                                          EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value
+                                                      ),
+                                                      row=row,
+                                                      value=1 if employee.get_pay_for_actual_work
+                                                                 (month=MonthEnum(month)) > 0
+                                                      else 0)
+
             self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                   col_header=(
                                                       EmployeeSheetHeaders.BLANK.value,
@@ -174,43 +218,6 @@ class ExcelProcessor:
                                                   ),
                                                   row=row,
                                                   value=employee.get_disability_recognised_to())
-
-            for month in self.__data_months:
-
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.DISABILITY_STATUS.value
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_disability_status())
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.GROSS_PAY.value
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_gross_pay(month=MonthEnum(month)))
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.INSURANCE_PAYMENT.value
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_insurance_payment(month=MonthEnum(month)))
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value
-                                                      ),
-                                                      row=row,
-                                                      value=1 if employee.get_pay_for_actual_work
-                                                                 (month=MonthEnum(month)) > 0
-                                                      else 0)
 
             row += 1
 

@@ -4,6 +4,8 @@ a certain employee before writing it into the government template
 """
 from datetime import datetime
 
+import pandas as pd
+
 from src.Enums import ErrNoEnum, MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
 from src.Utils import ErrorHandler
@@ -318,3 +320,14 @@ class Employee:
             return self.__insurance_payment[month]
         except KeyError:
             return 0
+
+    def was_active_in_quarter(self, months: dict[str, pd.DataFrame]) -> bool:
+        """
+        Checks whether the employee was active in the quarter
+        :param months: months to check for activity
+        :return: boolean indicating whether the employee was active in the quarter
+        """
+        return any(
+            self.get_pay_for_actual_work(MonthEnum(m)) > 0 or
+            self.get_gross_pay(MonthEnum(m)) > 0 for m in months
+        )
