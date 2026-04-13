@@ -1,7 +1,9 @@
 """
 This module contains the ExcelProcessor class used for processing the provided input Excel file
 """
+import time
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -14,6 +16,7 @@ from src.Enums.month_headers_enum import MonthHeaders
 from src.Enums.quarter_enum import Quarters
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
 from src.Services.template_manager import TemplateManager
+from src.Utils.app_error import AppError
 from src.Utils.employee import Employee
 from src.Utils.error_handler import ErrorHandler
 
@@ -23,13 +26,13 @@ class ExcelProcessor:
     Class made for handling loading and processing the Excel files
     """
     def __init__(self) -> None:
-        self.file_path = None
-        self.output_directory = None
+        self.file_path: Path | None = None
+        self.output_directory: Path | None = None
         self.data: pd.ExcelFile | None = None
         self.template: pd.ExcelFile | None = None
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
-        self.__data_months: dict[str, pd.DataFrame | None] | None = None
+        self.__data_months: dict[str, pd.DataFrame | None] = {}
         self.__year: int | None = None
         self.__quarter: int | None = None
 
@@ -120,6 +123,8 @@ class ExcelProcessor:
 
             if not employee.was_active_in_quarter(months=self.__data_months):
                 continue
+
+            time.sleep(0.001)
 
             for month in self.__data_months:
 
@@ -231,11 +236,18 @@ class ExcelProcessor:
         Processes employee data in the input sheet and inputs them into the template
         :return: bool indicating success or failure
         """
-        month_dataframes = [self.data.parse(self.data.sheet_names[0]),
-                            self.data.parse(self.data.sheet_names[1]),
-                            self.data.parse(self.data.sheet_names[2])]
+        if self.data is None:
+            raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
+                           error_message="Interní chyba programu")
 
-        human_resources: pd.DataFrame = self.data.parse(self.data.sheet_names[3])
+        month_dataframes: list[pd.DataFrame] = [
+            cast(pd.DataFrame, self.data.parse(self.data.sheet_names[0])),
+            cast(pd.DataFrame, self.data.parse(self.data.sheet_names[1])),
+            cast(pd.DataFrame, self.data.parse(self.data.sheet_names[2]))
+        ]
+
+        human_resources: pd.DataFrame = cast(pd.DataFrame,
+                                             self.data.parse(self.data.sheet_names[3]))
 
         for idx, key in enumerate(self.__data_months):
             self.__data_months[key] = month_dataframes[idx]
@@ -246,11 +258,10 @@ class ExcelProcessor:
 
             month: MonthEnum = MonthEnum(month_key)
 
-            for _, row in month_sheet.iterrows():
-                personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
+            records = month_sheet.to_dict("records")
 
-                if personal_num == 2001037:
-                    pass
+            for row in records:
+                personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
 
                 if personal_num not in self.employee_data:
                     hr_matches: pd.DataFrame = human_resources.loc[
@@ -389,6 +400,10 @@ class ExcelProcessor:
                           MonthEnum.NOV.value,
                           MonthEnum.DEC.value)
 
+        if months is None:
+            raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
+                           error_message="Vnitřní chyba programu.")
+
         return (
             (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.SURNAME.value),
             (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.FIRST_NAME.value),
@@ -396,8 +411,10 @@ class ExcelProcessor:
             (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.CONTRACT_START.value),
             (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.CONTRACT_END.value),
             (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.INSURANCE_COMPANY.value),
-            (EmployeeSheetHeaders.BLANK.value, EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value),
-            (EmployeeSheetHeaders.MONTH.value, EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value),
+            (EmployeeSheetHeaders.BLANK.value,
+             EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value),
+            (EmployeeSheetHeaders.MONTH.value,
+             EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value),
             (months[0], EmployeeSheetHeaders.DISABILITY_STATUS.value),
             (months[0], EmployeeSheetHeaders.GROSS_PAY.value),
             (months[0], EmployeeSheetHeaders.INSURANCE_PAYMENT.value),

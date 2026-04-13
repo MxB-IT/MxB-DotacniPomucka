@@ -8,7 +8,7 @@ import pandas as pd
 
 from src.Enums import ErrNoEnum, MonthEnum
 from src.Enums.disability_status_enum import DisabilityStatus
-from src.Utils import ErrorHandler
+from src.Utils.app_error import AppError
 
 
 class Employee:
@@ -38,17 +38,18 @@ class Employee:
         """
         self.__surname = surname
 
-    def get_surname(self) -> str | None:
+    def get_surname(self) -> str:
         """
         Getter for the surname private attribute, checks whether surname is blank and shows an
         error to the user if it is, to ensure the user knows why the writing failed
         :return: surname of the employee if it exists, None otherwise
         """
         if self.__surname is None:
-            ErrorHandler(error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                                       "zaměstnanec má na vstupu zadané příjmení a zkuste to "
-                                       "prosím znovu.",
-                         error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET)
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadané příjmení a zkuste to prosím "
+                                "znovu.")
+
         return self.__surname
 
     def get_first_name(self) -> str:
@@ -58,12 +59,11 @@ class Employee:
         :return: first name of the employee if it exists, None otherwise
         """
         if self.__first_name is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadané křestní jméno a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadané křestní jméno a zkuste to "
+                                "prosím znovu.")
+
         return self.__first_name
 
     def set_first_name(self, first_name: str) -> None:
@@ -82,12 +82,14 @@ class Employee:
         """
         self.__birth_num = birth_num
 
-    def get_birth_num(self) -> str | None:
+    def get_birth_num(self) -> str:
         """
         Getter for the birth number private attribute, since birth num can be blank (with
         foreigners for example), it is not checked for blankness
         :return: birth number of the employee if it exists, None otherwise
         """
+        if self.__birth_num is None:
+            return "NEZNÁMÉ!"
         return self.__birth_num
 
     def set_contract_start_date(self, contract_start_date: datetime) -> None:
@@ -98,7 +100,7 @@ class Employee:
         """
         self.__contract_start_date = contract_start_date
 
-    def get_contract_start_date(self) -> datetime | None:
+    def get_contract_start_date(self) -> datetime:
         """
         Getter for the contract start date private attribute, checks whether contract start date
         is blank and shows an error to the user if it is, to ensure the user knows why the writing
@@ -106,12 +108,10 @@ class Employee:
         :return: contract start date for the employee if it exists, None otherwise
         """
         if self.__contract_start_date is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadané datum vzniku pracovního poměru a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadané datum vzniku pracovního poměru a "
+                                "zkuste to prosím znovu.")
         return self.__contract_start_date
 
     def set_contract_end_date(self, contract_end_date: datetime) -> None:
@@ -145,12 +145,10 @@ class Employee:
         :return: insurance code for the employee if it exists, None otherwise
         """
         if self.__insurance_code is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadané číslo pojišťovny a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadané číslo pojišťovny a zkuste to "
+                                "prosím znovu.")
         return self.__insurance_code
 
     def set_disability_recognised_from(self, disability_recognised_from: datetime) -> None:
@@ -171,12 +169,10 @@ class Employee:
         :return: disability recognised from for the employee if it exists, None otherwise
         """
         if self.__disability_recognised_from is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadané odkdy je mu uznávána invalidita a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadané odkdy je mu uznávána invalidita "
+                                "a zkuste to prosím znovu.")
         return self.__disability_recognised_from
 
     def set_disability_recognised_to(self, disability_recognised_to: datetime) -> None:
@@ -205,7 +201,7 @@ class Employee:
         """
         self.__disability_status = disability_status
 
-    def get_disability_status(self) -> DisabilityStatus | None:
+    def get_disability_status(self) -> DisabilityStatus:
         """
         Getter for the disability status private attribute, checks whether disability status is
         blank and shows an error to the user if it is, to ensure the user knows why the writing
@@ -213,12 +209,11 @@ class Employee:
         :return: disability status for the employee if it exists, None otherwise
         """
         if self.__disability_status is None:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadaný status invalidity a zkuste to "
-                "prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
+            raise AppError(error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
+                           error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
+                                "zaměstnanec má na vstupu zadaný status invalidity a zkuste to "
+                                "prosím znovu.")
+
         return self.__disability_status
 
     def set_gross_pay(self, month: MonthEnum, pay: float) -> None:
@@ -239,21 +234,8 @@ class Employee:
         :return: gross pay for a given month for the employee if it exists, None otherwise
         """
         try:
-            if self.__gross_pay[month] is None:
-                ErrorHandler(
-                    error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                                  "zaměstnanec má na vstupu zadanou pro každý měsíc hrubou mzdu a "
-                                  "zkuste to prosím znovu.",
-                    error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-                )
             return self.__gross_pay[month]
         except KeyError:
-            ErrorHandler(
-                error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                "zaměstnanec má na vstupu zadanou pro každý měsíc hrubou mzdu a "
-                "zkuste to prosím znovu.",
-                error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-            )
             return 0
 
     def set_pay_for_actual_work(self, month: MonthEnum, pay: float) -> None:
@@ -277,13 +259,6 @@ class Employee:
         :return: pay for a given month for the employee if it exists, None otherwise
         """
         try:
-            if self.__pay_for_actual_work[month] is None:
-                ErrorHandler(
-                    error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                                  "zaměstnanec má na vstupu zadanou pro každý měsíc základní mzdu "
-                                  "a zkuste to prosím znovu.",
-                    error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-                )
             return self.__pay_for_actual_work[month]
         except KeyError:
             return 0
@@ -310,18 +285,11 @@ class Employee:
         otherwise
         """
         try:
-            if self.__insurance_payment[month] is None:
-                ErrorHandler(
-                    error_message="Chyba během zpracování Excelu, zkontrolujte, že každý "
-                                  "zaměstnanec má na vstupu zadán pro každý měsíc odvod pojistného"
-                                  " a zkuste to prosím znovu.",
-                    error_code=ErrNoEnum.ERR_EMPLOYEE_MANDATORY_ATTR_NOT_SET,
-                )
             return self.__insurance_payment[month]
         except KeyError:
             return 0
 
-    def was_active_in_quarter(self, months: dict[str, pd.DataFrame]) -> bool:
+    def was_active_in_quarter(self, months: dict[str, pd.DataFrame | None]) -> bool:
         """
         Checks whether the employee was active in the quarter
         :param months: months to check for activity

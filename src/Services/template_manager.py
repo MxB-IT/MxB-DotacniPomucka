@@ -113,40 +113,29 @@ class TemplateManager:
 
     def __scrub_template(self) -> bool:
         try:
-            # 1. Read the original into memory
             with self.path.open("rb") as f:
                 original_data = f.read()
 
             in_buffer = io.BytesIO(original_data)
             out_buffer = io.BytesIO()
 
-            with zipfile.ZipFile(in_buffer, "r") as zin:
-                with zipfile.ZipFile(out_buffer, "w") as zout:
+            with zipfile.ZipFile(in_buffer, "r") as zin, zipfile.ZipFile(out_buffer, "w") as zout:
                     for item in zin.infolist():
-                        # Read the raw content
                         content = zin.read(item.filename)
 
                         if item.filename == "xl/workbook.xml":
-                            # Perform the scrub
-                            # This regex is very specific to ensure we don't break the XML structure
                             pattern = rb"<definedName [^>]*>#N/A</definedName>"
                             if re.search(pattern, content):
                                 content = re.sub(pattern, b"", content)
 
-                        # CRITICAL: We create a new ZipInfo to reset the CRC/Size
-                        # BUT we copy the compression type from the original item
                         new_item = zipfile.ZipInfo(item.filename)
                         new_item.compress_type = item.compress_type
                         new_item.create_system = item.create_system
 
-                        # Write it back using the original compression method
                         zout.writestr(new_item, content)
 
-            # 2. Check the size again. A small drop (bytes) is fine.
-            # A 1MB drop means we failed to copy a folder.
             final_bytes = out_buffer.getvalue()
 
-            # If it's still way smaller, the ZIP library is failing to see some parts.
             print(f"Original size: {len(original_data)} | New size: {len(final_bytes)}")
 
             with self.path.open("wb") as f:
@@ -160,7 +149,7 @@ class TemplateManager:
 
     def write_into_cell(self,
                         sheet_name: str,
-                        value: str | int | float | datetime | DisabilityStatus,
+                        value: str | int | float | datetime | DisabilityStatus | None,
                         row: int,
                         col: int | None = None,
                         col_header: str | tuple[str, ...] | None = None) -> bool:

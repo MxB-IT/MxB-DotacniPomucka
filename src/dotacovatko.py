@@ -7,10 +7,12 @@ from pathlib import Path
 from tkinter import filedialog
 from typing import Any
 
-from customtkinter import CTk, CTkProgressBar
+from customtkinter import CTk
 
+from src.Enums import ErrNoEnum
 from src.Services import ExcelProcessor
-from src.Utils import SuccessHandler
+from src.Utils import ErrorHandler, SuccessHandler
+from src.Utils.app_error import AppError
 from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 
@@ -112,52 +114,64 @@ class Dotacovatko(CTk):
                                               text_color="red")
 
     def _threaded_start(self) -> None:
+        """
+        Starts the background processes inside a thread to ensure the UI stays responsive
+        :return: None
+        """
         self._start_widgets[1].configure(text="")
-        self.update_idletasks(),
+
         self._progress_bar.grid(row=self._start_widgets[1].grid_info()["row"],
                                 column=self._start_widgets[1].grid_info()["column"])
-
-        progressbar_thread = threading.Thread(target=CTkProgressBar.start,
-                                              args=(self._progress_bar,))
-        progressbar_thread.start()
+        self._progress_bar.start()
 
         background_thread = threading.Thread(target=self._bg_processing, daemon=True)
         background_thread.start()
 
     def _bg_processing(self) -> None:
-        download: bool = self._excel_processor.load_template()
-        if not download:
-            self._progress_bar.stop()
-            self._progress_bar.grid_forget()
+        """
+        Method used to dictate how the background processing of data is run and how the UI responds
+        :return: None
+        """
+        try:
+            if not self._excel_processor.load_template():
+                self.after(0, self.__handle_failure,
+                           ErrNoEnum.ERR_FAILED_TO_DOWNLOAD, "Chyba během stahování šablony.")
+                return
 
-            self._start_widgets[1].configure(text="Chyba během stahování šablony MPSV.",
-                                             text_color="red")
-            return
+            if not self._excel_processor.load_data():
+                self.after(0, self.__handle_failure,
+                           ErrNoEnum.ERR_OPENING_EXCEL, "Chyba během načítání dat.")
+                return
 
-        data_load: bool = self._excel_processor.load_data()
-        if not data_load:
-            self._progress_bar.stop()
-            self._progress_bar.grid_forget()
+            if not self._excel_processor.process_input_data():
+                self.after(0, self.__handle_failure,
+                           ErrNoEnum.ERR_WORKING_WITH_EXCEL, "Chyba během zpracování dat")
+                return
 
-            self._start_widgets[1].configure(text="Chyba během načítání dat.",
-                                             text_color="red")
+            self.after(0, self.__handle_success)
 
-        processed: bool = self._excel_processor.process_input_data()
-        if not processed:
-            self._progress_bar.stop()
-            self._progress_bar.grid_forget()
+        except AppError as e:
+            self.after(0, self.__handle_failure, e.error_code, e.error_message)
 
-            self._start_widgets[1].configure(text="Chyba během zpracování dat",
-                                             text_color="red")
+        except Exception as e:
+            self.after(0, self.__handle_failure,
+                       ErrNoEnum.INTERNAL_ERROR, f"Neočekávaná chyba {e}")
 
+    def __handle_success(self) -> None:
+        """
+        Method used to have the UI react to a successful
+        :return:
+        """
         self._progress_bar.stop()
         self._progress_bar.grid_forget()
-
-        self._start_widgets[1].configure(text="Data úspěšně zpracována",
-                                         text_color="green")
-
+        self._start_widgets[1].configure(text="Data úspěšně zpracována", text_color="green")
         SuccessHandler()
 
+    def __handle_failure(self, error_code: ErrNoEnum, error_msg: str) -> None:
+        self._progress_bar.stop()
+        self._progress_bar.grid_forget()
+        ErrorHandler(error_code=error_code, error_message=error_msg)
+        self._start_widgets[1].configure(text=error_msg, text_color="red")
 
 if __name__ == "__main__":
     app = Dotacovatko()
