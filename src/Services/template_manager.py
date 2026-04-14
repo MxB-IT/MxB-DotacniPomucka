@@ -282,10 +282,14 @@ class TemplateManager:
         Saves the loaded template workbook back onto the disk and forces the formulas inside to run
         and update the sheets accordingly
         """
+
         try:
             pythoncom.CoInitialize()
 
             self.template.save(self.path)
+
+            if hasattr(self.template, "close"):
+                self.template.close()
 
             with xw.App(visible=False) as app:
                 book = xw.Book(self.path)
@@ -298,7 +302,7 @@ class TemplateManager:
             return True
         except (PermissionError, OSError) as e:
             raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                           error_message="Perms error") from e
+                           error_message=f"Chyba během znovunačítání šablony, {e}") from e
 
         finally:
             pythoncom.CoUninitialize()
