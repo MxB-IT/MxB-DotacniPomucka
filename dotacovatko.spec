@@ -8,7 +8,7 @@ a = Analysis(
     ["./src/Dotacovatko.py"],
     pathex=[],
     binaries=[],
-    datas=added_files,
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
