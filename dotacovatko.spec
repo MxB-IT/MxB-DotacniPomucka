@@ -4,12 +4,6 @@ block_cipher = None
 
 sep = ";"
 
-added_files = [
-    ("Assets/Fonts/", "Assets/Fonts"),
-    ("Assets/Images/", "Assets/Images"),
-    ("Assets/Icon/", "Assets/Icon")
-]
-
 a = Analysis(
     ["./src/Dotacovatko.py"],
     pathex=[],
