@@ -11,7 +11,7 @@ added_files = [
 ]
 
 a = Analysis(
-    ["Dotacovatko.py"],
+    ["./src/Dotacovatko.py"],
     pathex=[],
     binaries=[],
     datas=added_files,
