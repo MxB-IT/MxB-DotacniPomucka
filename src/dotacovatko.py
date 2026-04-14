@@ -2,8 +2,9 @@
 This module defines the main Dotacovatko class containing all the overall app logic for rendering
 its window and for managing the invocation of all methods needed for its functionality
 """
-import threading
+import multiprocessing
 from pathlib import Path
+from queue import Empty
 from tkinter import filedialog
 from typing import Any
 
@@ -12,7 +13,6 @@ from customtkinter import CTk
 from src.Enums import ErrNoEnum
 from src.Services import ExcelProcessor
 from src.Utils import ErrorHandler, SuccessHandler
-from src.Utils.app_error import AppError
 from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 
@@ -22,6 +22,7 @@ class Dotacovatko(CTk):
     """
     def __init__(self):
         super().__init__()
+
         self._excel_processor: ExcelProcessor = ExcelProcessor()
 
         self.title("Dotační můstek")
@@ -60,6 +61,9 @@ class Dotacovatko(CTk):
         self._widgets.append(self._start_widgets)
 
         self._arrange_widgets()
+
+        self._queue: multiprocessing.Queue = multiprocessing.Queue()
+        self._bg_process: multiprocessing.Process | None = None
 
     def _arrange_widgets(self) -> None:
         """
@@ -124,38 +128,35 @@ class Dotacovatko(CTk):
                                 column=self._start_widgets[1].grid_info()["column"])
         self._progress_bar.start()
 
-        background_thread = threading.Thread(target=self._bg_processing, daemon=True)
-        background_thread.start()
+        input_path: Path | None = self._excel_processor.file_path
+        output_dir: Path | None = self._excel_processor.output_directory
 
-    def _bg_processing(self) -> None:
+        self._bg_process = multiprocessing.Process(
+            target=Dotacovatko.run_background_processing,
+            args=(self._queue, input_path, output_dir),
+            daemon=True
+        )
+
+        self._bg_process.start()
+
+        self._check_queue()
+
+    def _check_queue(self) -> None:
         """
-        Method used to dictate how the background processing of data is run and how the UI responds
+        method used to poll the multiprocessing queue for messages from the processing
+        multiprocessing instance
         :return: None
         """
+
         try:
-            if not self._excel_processor.load_template():
-                self.after(0, self.__handle_failure,
-                           ErrNoEnum.ERR_FAILED_TO_DOWNLOAD, "Chyba během stahování šablony.")
-                return
+            status, message = self._queue.get_nowait()
 
-            if not self._excel_processor.load_data():
-                self.after(0, self.__handle_failure,
-                           ErrNoEnum.ERR_OPENING_EXCEL, "Chyba během načítání dat.")
-                return
-
-            if not self._excel_processor.process_input_data():
-                self.after(0, self.__handle_failure,
-                           ErrNoEnum.ERR_WORKING_WITH_EXCEL, "Chyba během zpracování dat")
-                return
-
-            self.after(0, self.__handle_success)
-
-        except AppError as e:
-            self.after(0, self.__handle_failure, e.error_code, e.error_message)
-
-        except Exception as e:
-            self.after(0, self.__handle_failure,
-                       ErrNoEnum.INTERNAL_ERROR, f"Neočekávaná chyba {e}")
+            if status == "success":
+                self.__handle_success()
+            else:
+                self.__handle_failure(ErrNoEnum.INTERNAL_ERROR, message)
+        except Empty:
+            self.after(100, self._check_queue)
 
     def __handle_success(self) -> None:
         """
@@ -172,6 +173,40 @@ class Dotacovatko(CTk):
         self._progress_bar.grid_forget()
         ErrorHandler(error_code=error_code, error_message=error_msg)
         self._start_widgets[1].configure(text=error_msg, text_color="red")
+
+    @staticmethod
+    def run_background_processing(queue: multiprocessing.Queue,
+                                  input_path: Path,
+                                  output_dir: Path) -> None:
+        """
+        Manages multiprocessing invocation of the ExcelProcessor class and puts it to work
+        analysing the Excel data
+        :param queue: multiprocessing queue for communicating with the GUI
+        :param input_path: path to the input file to be passed to the ExcelProcessor
+        :param output_dir: output directory to be passed to the ExcelProcessor
+        :return: None
+        """
+        try:
+            processor = ExcelProcessor()
+            processor.set_input(input_path)
+            processor.set_output_directory(output_dir)
+
+            if not processor.load_template():
+                queue.put(("error", "Chyba během stahování šablony."))
+                return
+
+            if not processor.load_data():
+                queue.put(("error", "Chyba během načítání dat."))
+                return
+
+            if not processor.process_input_data():
+                queue.put(("error", "Chyba během zpracování dat."))
+                return
+
+            queue.put(("success", "done"))
+
+        except Exception as e:
+            queue.put(("error", str(e)))
 
 if __name__ == "__main__":
     app = Dotacovatko()
