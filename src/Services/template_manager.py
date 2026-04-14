@@ -136,15 +136,12 @@ class TemplateManager:
 
             final_bytes = out_buffer.getvalue()
 
-            print(f"Original size: {len(original_data)} | New size: {len(final_bytes)}")
-
             with self.path.open("wb") as f:
                 f.write(final_bytes)
 
             return True
 
         except Exception as e:
-            print(f"Patching failed: {e}")
             return False
 
     def write_into_cell(self,
@@ -215,7 +212,6 @@ class TemplateManager:
 
             return True
         except Exception as e:
-            print(f"Failed, {e}")
             return False
 
     def build_col_map(self,
@@ -239,9 +235,8 @@ class TemplateManager:
 
             if col:
                 self.__col_mapping[(sheet_name, header)] = col
-                #print(self.__col_mapping)
             else:
-                print(f"well, fuck, {header}")
+                return
 
         temp.close()
 
@@ -286,7 +281,6 @@ class TemplateManager:
         and update the sheets accordingly
         """
         try:
-            print(f"reloading, {self.path}")
             self.template.save(self.path)
 
             with xw.App(visible=False) as app:

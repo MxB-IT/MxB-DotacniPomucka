@@ -209,5 +209,6 @@ class Dotacovatko(CTk):
             queue.put(("error", str(e)))
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     app = Dotacovatko()
     app.mainloop()
