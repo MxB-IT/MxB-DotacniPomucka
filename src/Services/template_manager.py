@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import openpyxl
+import pythoncom
 import requests
 import xlwings as xw
 from openpyxl.cell import Cell, MergedCell
@@ -22,6 +23,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
+from src.Utils.app_error import AppError
 from src.Utils.error_handler import ErrorHandler
 
 
@@ -281,6 +283,8 @@ class TemplateManager:
         and update the sheets accordingly
         """
         try:
+            pythoncom.CoInitialize()
+
             self.template.save(self.path)
 
             with xw.App(visible=False) as app:
@@ -292,10 +296,12 @@ class TemplateManager:
             self.template = openpyxl.load_workbook(self.path,
                                                    data_only=False)
             return True
-        except (PermissionError, OSError):
-            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                         error_message="TODO")
-            return False
+        except (PermissionError, OSError) as e:
+            raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                           error_message="Perms error") from e
+
+        finally:
+            pythoncom.CoUninitialize()
 
     @staticmethod
     def __get_cell_value(ws: Worksheet, row: int, col: int) -> Any:
