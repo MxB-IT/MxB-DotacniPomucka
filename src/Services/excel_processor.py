@@ -95,17 +95,16 @@ class ExcelProcessor:
         :return: bool indicating success or failure
         """
         if not self.__set_year_and_quarter():
-            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                         error_message="TODO")
-            return False
+            raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                           error_message="Chyba během načítání Excelu")
 
         if self.template_manager is None:
-            ErrorHandler(error_code=ErrNoEnum.INTERNAL_ERROR,
-                         error_message="Interní chyba programu, zkuste to prosím znovu")
-            return False
+            raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
+                           error_message="Interní chyba programu, zkuste to prosím znovu")
 
         if not self.template_manager.reload_template():
-            return False
+            raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
+                           error_message="Chyba během znovunačítání Excelu")
 
         if self.__data_months is None:
             return False
