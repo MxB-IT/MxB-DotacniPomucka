@@ -51,52 +51,48 @@ class ExcelProcessor:
         """
         self.output_directory = output_directory
 
-    def load_template(self) -> bool:
+    def load_template(self) -> None:
         """
         This method loads the template Excel file into a pandas dataframe in order to be edited,
         loads sheets that will be explicitly required into separate attributes
-        :return: bool indicating if the template was successfully loaded
+        :return: None, raises an error if failed
         """
         try:
             self.template_manager = TemplateManager(r"https://mpsv.gov.cz/cms/documents/57e12a5e-05b3-6511-0b8a-25dab64d5396/seznam%20zam%C4%9Bstnanc%C5%AF%20OZP_verze%2023_9_2025.xlsx")
         except PermissionError as e:
-            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
-                         error_message=str(e))
-            return False
+            raise AppError(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                           error_message="Chyba při stahování souboru, program nemá"
+                                         " dostatečná práva.") from e
 
         if not self.template_manager.download_template():
-            raise ConnectionError("Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
-                                  "připojení k internetu a zkuste to prosím znovu.")
+            raise AppError(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                           error_message="Nepodařilo se stáhnout Excel šablonu MPSV, zkontrolujte"
+                                         "připojení k internetu a zkuste to prosím znovu.")
 
         if not self.template_manager.load_template_into_memory():
-            ErrorHandler(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
-                         error_message="Nepodařilo se načíst šablonu, zkontrolujte, že je šablona "
-                                       "v pořádku a zkuste to prosím znovu.")
-        return True
+            raise AppError(error_code=ErrNoEnum.ERR_FAILED_TO_DOWNLOAD,
+                           error_message="Nepodařilo se načíst šablonu, zkontrolujte, že je"
+                                         " šablona v pořádku a zkuste to prosím znovu.")
 
-    def load_data(self) -> bool:
+    def load_data(self) -> None:
         """
         Loads an Excel file into a pandas dataframe in the data attribute
-        :return: bool indicating success or failure
+        :return: None, raises an error if failed
         """
         try:
             self.data = pd.ExcelFile(path_or_buffer=self.file_path)
 
-        except OSError:
-            ErrorHandler(error_code=ErrNoEnum.ERR_OPENING_EXCEL,
-                         error_message="Nepodařilo se otevřít Excel soubor, prosím ujistěte se, že"
-                                       "jej nemáte nikde otevřený a zkuste to znovu.")
-            return False
-        return True
+        except OSError as e:
+            raise AppError(error_code=ErrNoEnum.ERR_OPENING_EXCEL,
+                           error_message="Nepodařilo se otevřít Excel soubor, prosím ujistěte se, "
+                                         "že jej nemáte nikde otevřený a zkuste to znovu.") from e
 
     def process_input_data(self) -> bool:
         """
         Processes the input Excel file and populates the template with data extracted from it
         :return: bool indicating success or failure
         """
-        if not self.__set_year_and_quarter():
-            raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                           error_message="Chyba během načítání Excelu")
+        self.__set_year_and_quarter()
 
         if self.template_manager is None:
             raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
@@ -302,7 +298,7 @@ class ExcelProcessor:
 
         return True
 
-    def __set_year_and_quarter(self) -> bool:
+    def __set_year_and_quarter(self) -> None:
         """
         Sets which year and quarter the report is being generated for inside the template
         :return: bool indicating success or failure
@@ -310,10 +306,9 @@ class ExcelProcessor:
         months: tuple[int, ...] = tuple(int(m.split("_")[0]) for
                                         m in self.data.sheet_names if "_" in m)
         if months is None:
-            ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                         error_message="Chyba během zpracování vstupního souboru, prosím "
-                                       "zkontrolujte formát Excelu na vstupu programu.")
-            return False
+            raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                           error_message="Chyba během zpracování vstupního souboru, prosím "
+                                         "zkontrolujte formát Excelu na vstupu programu.")
 
         self.__year = int(self.data.sheet_names[0].split("_")[1])
 
@@ -339,14 +334,18 @@ class ExcelProcessor:
                                       MonthEnum.NOV.value : None,
                                       MonthEnum.DEC.value : None}
             case _:
-                return False
+                raise AppError(
+                    error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
+                    error_message="Chyba během zpracovávání podkladů, zkontrolujte prosím, že v "
+                                  "podkladovém Excelu máte pracovní listy pro jednotlivé měsíce "
+                                  "kvartálu a list pro personalistiku."
+                )
 
         if self.__quarter is None or self.__year is None:
-            ErrorHandler(
+            raise AppError(
                 error_code=ErrNoEnum.INTERNAL_ERROR,
                 error_message="Vnitřní chyba programu, zkuste to prosím znovu"
             )
-            return False
 
         self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.INTRO_SHEET,
                                               value=self.__quarter,
@@ -357,8 +356,6 @@ class ExcelProcessor:
                                               value=self.__year,
                                               row=6,
                                               col=9)
-
-        return True
 
     def __save_processed(self, filename: str) -> bool:
         """

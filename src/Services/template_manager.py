@@ -302,7 +302,7 @@ class TemplateManager:
             return True
         except (PermissionError, OSError) as e:
             raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                           error_message=f"Chyba během znovunačítání šablony, {e}") from e
+                           error_message="Chyba během znovunačítání šablony.") from e
 
         finally:
             pythoncom.CoUninitialize()

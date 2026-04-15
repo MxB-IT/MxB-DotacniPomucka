@@ -14,6 +14,7 @@ from src.Enums import ErrNoEnum
 from src.Services import ExcelProcessor
 from src.Utils import ErrorHandler, SuccessHandler
 from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
+from src.Utils.app_error import AppError
 
 
 class Dotacovatko(CTk):
@@ -191,19 +192,18 @@ class Dotacovatko(CTk):
             processor.set_input(input_path)
             processor.set_output_directory(output_dir)
 
-            if not processor.load_template():
-                queue.put(("error", "Chyba během stahování šablony."))
-                return
+            processor.load_template()
 
-            if not processor.load_data():
-                queue.put(("error", "Chyba během načítání dat."))
-                return
+            processor.load_data()
 
             if not processor.process_input_data():
                 queue.put(("error", "Chyba během zpracování dat."))
                 return
 
             queue.put(("success", "done"))
+
+        except AppError as e:
+            queue.put(("error", (e.error_code, e.error_message)))
 
         except Exception as e:
             queue.put(("error", str(e)))
