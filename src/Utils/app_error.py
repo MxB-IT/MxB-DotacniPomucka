@@ -1,9 +1,6 @@
 """Defines the error class used for all app errors."""
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.Enums import ErrNoEnum
+from src.Enums import ErrNoEnum
 
 
 class AppError(Exception):

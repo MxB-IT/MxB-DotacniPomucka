@@ -1,12 +1,10 @@
 """Defines the base class for all Frames within the project."""
-from typing import TYPE_CHECKING, Any
+from tkinter import Canvas
+from typing import Any
 
 from customtkinter import CTkFrame, CTkToplevel
 
 from src.Enums import ColourEnum
-
-if TYPE_CHECKING:
-    from tkinter import Canvas
 
 
 class FrameBase(CTkFrame):

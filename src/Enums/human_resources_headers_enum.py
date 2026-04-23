@@ -10,5 +10,5 @@ class HumanResourcesHeaders(StrEnum):
     FIRST_NAME = "Jméno"
     PERSONAL_NUM = "Osobní číslo"
     INSURANCE_COMPANY = "Pojišťovna"
-    DISABILITY_STATUS = "Druh důchodu"
-    DISABILITY_START = "Důchod pobírán od"
+    DISABILITY_STATUS = "Typ omezení"
+    DISABILITY_START = "Přiznané od"

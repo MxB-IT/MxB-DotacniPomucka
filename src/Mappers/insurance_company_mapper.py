@@ -10,12 +10,20 @@ class InsuranceCompanyMapper:
 
     _MAPPING: MappingProxyType[str, int] = MappingProxyType({
         "Všeobecná zdravotní pojišťovna ČR": 111,
+        "VZP": 111,
         "Vojenská zdravotní pojišťovna ČR": 201,
+        "VOZP": 201,
         "Česká průmyslová zdravotní pojišťovna": 205,
+        "ČPZP": 205,
         "Oborová zdravotní pojišťovna zaměstnanců bank, pojišťoven a stavebnictví": 207,
+        "OZP": 207,
         "Zaměstnanecká pojišťovna Škoda": 209,
+        "ZPŠ": 209,
         "Zdravotní pojišťovna ministerstva vnitra ČR": 211,
+        "ZPMV": 211,
+        "ZPMVČR": 211,
         "RBP, zdravotní pojišťovna": 213,
+        "Revírní bratrská pokladna, zdravotní pojišťovna": 213,
     })
 
     @classmethod

@@ -1,25 +1,23 @@
 """Contains the ExcelProcessor class used for processing the provided input Excel file."""
 import time
-from typing import TYPE_CHECKING, cast
+from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
 from src.Enums import MonthEnum
-from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.employee_sheet_headers import EmployeeSheetHeaders
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Enums.human_resources_headers_enum import HumanResourcesHeaders
 from src.Enums.month_headers_enum import MonthHeaders
 from src.Enums.quarter_enum import Quarters
 from src.Enums.template_sheet_names_enum import TemplateSheetNames
+from src.Mappers.disability_type_mapper import DisabilityTypeMapper
 from src.Mappers.insurance_company_mapper import InsuranceCompanyMapper
 from src.Services.template_manager import TemplateManager
 from src.Utils.app_error import AppError
 from src.Utils.employee import Employee
 from src.Utils.error_handler import ErrorHandler
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class ExcelProcessor:
@@ -292,8 +290,14 @@ class ExcelProcessor:
                     employee.set_first_name(hr_row[HumanResourcesHeaders.FIRST_NAME])
                     employee.set_insurance_code(InsuranceCompanyMapper
                                                 .from_str(hr_row[HumanResourcesHeaders.INSURANCE_COMPANY]))
-                    employee.set_disability_status(DisabilityStatus(hr_row[HumanResourcesHeaders.DISABILITY_STATUS]))
+                    employee.set_disability_status(DisabilityTypeMapper
+                                                   .from_int(int(hr_row[HumanResourcesHeaders.DISABILITY_STATUS])))
                     employee.set_disability_recognised_from(hr_row[HumanResourcesHeaders.DISABILITY_START])
+                    try:
+                        employee.get_disability_recognised_from()
+                        employee.get_disability_status()
+                    except AppError:
+                        continue
 
                 else:
                     employee = self.employee_data[personal_num]

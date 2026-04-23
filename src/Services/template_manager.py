@@ -5,27 +5,23 @@ import re
 import tempfile
 import time
 import zipfile
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import openpyxl
 import pythoncom
 import requests
 import xlwings as xw
+from openpyxl.cell import Cell, MergedCell
+from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
+from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Utils.app_error import AppError
 from src.Utils.error_handler import ErrorHandler
-
-if TYPE_CHECKING:
-    from datetime import datetime
-
-    from openpyxl.cell import Cell, MergedCell
-    from openpyxl.workbook import Workbook
-    from openpyxl.worksheet.worksheet import Worksheet
-
-    from src.Enums.disability_status_enum import DisabilityStatus
 
 
 class TemplateManager:

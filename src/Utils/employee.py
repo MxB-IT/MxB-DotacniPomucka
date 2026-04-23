@@ -1,15 +1,11 @@
 """Defines a container for employee data extracted from the input sheet."""
-from typing import TYPE_CHECKING
+from datetime import datetime
+
+import pandas as pd
 
 from src.Enums import ErrNoEnum, MonthEnum
+from src.Enums.disability_status_enum import DisabilityStatus
 from src.Utils.app_error import AppError
-
-if TYPE_CHECKING:
-    from datetime import datetime
-
-    import pandas as pd
-
-    from src.Enums.disability_status_enum import DisabilityStatus
 
 
 class Employee:
