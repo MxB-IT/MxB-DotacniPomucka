@@ -1,7 +1,4 @@
-"""
-This module defines the main Dotacovatko class containing all the overall app logic for rendering
-its window and for managing the invocation of all methods needed for its functionality
-"""
+"""Defines the main app class, which services the GUI and invokes the underlying scripts."""
 import multiprocessing
 from pathlib import Path
 from queue import Empty
@@ -13,15 +10,20 @@ from customtkinter import CTk
 from src.Enums import ErrNoEnum
 from src.Services import ExcelProcessor
 from src.Utils import ErrorHandler, SuccessHandler
-from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 from src.Utils.app_error import AppError
+from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 
 class Dotacovatko(CTk):
-    """
-    class containing the main app
-    """
-    def __init__(self):
+    """Contains the main app, GUI servicing and underlying script invocation."""
+
+    def __init__(self) -> None:
+        """Initialise the main app.
+
+        Initialises the GUI, all its widgets and prepares the beckground script classes
+        (ExcelProcessor and TemplateManager).
+        :return: None.
+        """
         super().__init__()
 
         self._excel_processor: ExcelProcessor = ExcelProcessor()
@@ -67,10 +69,11 @@ class Dotacovatko(CTk):
         self._bg_process: multiprocessing.Process | None = None
 
     def _arrange_widgets(self) -> None:
-        """
-        arranges widgets into a grid layout within the app's frame, uses the private variables
-        self._widgets and self._frame
-        :return: None
+        """Arrange widgets into an array.
+
+        Arranges widgets into a grid layout within the app's frame, uses the private variables
+        self._widgets and self._frame.
+        :return: None.
         """
         for i, row in enumerate(self._widgets):
             for j, widget in enumerate(row):
@@ -84,9 +87,10 @@ class Dotacovatko(CTk):
                                      weight=1)
 
     def _open_input(self) -> None:
-        """
-        lets the user choose an Excel file to open and passes it to the ExcelProcessor
-        :return: None
+        """Prompt the user to choose an input Excel file.
+
+        Lets the user choose an Excel file to open and passes it to the ExcelProcessor.
+        :return: None.
         """
         file_types = [("Excel soubor", "*.xlsx *.xls")]
         file_path = Path(filedialog.askopenfilename(filetypes=file_types,
@@ -102,10 +106,11 @@ class Dotacovatko(CTk):
                 text_color="red")
 
     def _choose_output_folder(self) -> None:
-        """
+        """Prompt the user to choose a folder to which output should be saved.
+
         Lets the user choose an output folder for the processed Excel file, sets it up in the
-        ExcelProcessor
-        :return: None
+        ExcelProcessor.
+        :return: None.
         """
         directory_path = Path(filedialog.askdirectory(initialdir=Path.cwd()))
 
@@ -119,9 +124,10 @@ class Dotacovatko(CTk):
                                               text_color="red")
 
     def _threaded_start(self) -> None:
-        """
-        Starts the background processes inside a thread to ensure the UI stays responsive
-        :return: None
+        """Start the input processing in a background process.
+
+        Starts the background processes inside a thread to ensure the UI stays responsive.
+        :return: None.
         """
         self._start_widgets[1].configure(text="")
 
@@ -143,12 +149,12 @@ class Dotacovatko(CTk):
         self._check_queue()
 
     def _check_queue(self) -> None:
-        """
-        method used to poll the multiprocessing queue for messages from the processing
-        multiprocessing instance
-        :return: None
-        """
+        """Check queue for multiprocessing messages.
 
+        Method used to poll the multiprocessing queue for messages from the processing
+        multiprocessing instance.
+        :return: None.
+        """
         try:
             status, message = self._queue.get_nowait()
 
@@ -160,9 +166,10 @@ class Dotacovatko(CTk):
             self.after(100, self._check_queue)
 
     def __handle_success(self) -> None:
-        """
-        Method used to have the UI react to a successful
-        :return:
+        """Handle a success report from underlying scripts.
+
+        Method used to have the UI react to a successful.
+        :return: None.
         """
         self._progress_bar.stop()
         self._progress_bar.grid_forget()
@@ -179,13 +186,14 @@ class Dotacovatko(CTk):
     def run_background_processing(queue: multiprocessing.Queue,
                                   input_path: Path,
                                   output_dir: Path) -> None:
-        """
+        """Run the background processing process.
+
         Manages multiprocessing invocation of the ExcelProcessor class and puts it to work
-        analysing the Excel data
-        :param queue: multiprocessing queue for communicating with the GUI
-        :param input_path: path to the input file to be passed to the ExcelProcessor
-        :param output_dir: output directory to be passed to the ExcelProcessor
-        :return: None
+        analysing the Excel data.
+        :param queue: Multiprocessing queue for communicating with the GUI.
+        :param input_path: Path to the input file to be passed to the ExcelProcessor.
+        :param output_dir: Output directory to be passed to the ExcelProcessor.
+        :return: None.
         """
         try:
             processor = ExcelProcessor()

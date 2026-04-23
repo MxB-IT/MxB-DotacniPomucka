@@ -1,39 +1,48 @@
-"""
-This module contains the definition of the TamplateManager class, used to download and prep the
-government ministry's Excel template
-"""
+"""Contains the definition of the class used to download and prep the Excel template."""
 import io
 import os
 import re
 import tempfile
 import time
 import zipfile
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import openpyxl
 import pythoncom
 import requests
 import xlwings as xw
-from openpyxl.cell import Cell, MergedCell
-from openpyxl.workbook import Workbook
-from openpyxl.worksheet.worksheet import Worksheet
 
-from src.Enums.disability_status_enum import DisabilityStatus
 from src.Enums.err_no_enum import ErrNoEnum
 from src.Utils.app_error import AppError
 from src.Utils.error_handler import ErrorHandler
 
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from openpyxl.cell import Cell, MergedCell
+    from openpyxl.workbook import Workbook
+    from openpyxl.worksheet.worksheet import Worksheet
+
+    from src.Enums.disability_status_enum import DisabilityStatus
+
 
 class TemplateManager:
-    """
+    """Manages all operations pertaining to the template.
+
     This class handles downloading the template for the output Excel sheet, if it has already been
     downloaded previously,
     it does not download anything, using the already downloaded file
     """
-    def __init__(self, template_url: str):
+
+    def __init__(self, template_url: str) -> None:
+        """Initialise the template manager.
+
+        Initialises the government template.
+        :param template_url: Url leading to the template file.
+        :return: None.
+        """
         self.__url: str = template_url
         self.__app_name: Path = Path("Dotacovatko")
         self.path: Path = self.__get_writable_path()
@@ -41,7 +50,8 @@ class TemplateManager:
         self.__col_mapping: dict[tuple[str, tuple[str, ...]], int] = {}
 
     def __get_writable_path(self) -> Path:
-        """
+        """Check for where to download the template.
+
         This method finds the best place to store the template file, it goes
         APPPDATA -> Documents -> system temp
         :return: filepath which will be written into
@@ -62,18 +72,22 @@ class TemplateManager:
             except OSError:
                 continue
 
-        raise PermissionError("Aplikace nebyla schopna najít složku, do které by mohla stáhnout a "
-                              "uložit Excel MPSV.")
+        raise AppError(
+            error_code=ErrNoEnum.ERR_FAILED_TO_FIND_WRITABLE,
+            error_message="Aplikace nebyla schopna najít složku, do které by mohla stáhnout a "
+                          "uložit Excel MPSV.")
 
     def __is_template_ready(self) -> bool:
-        """
+        """Check whether the template is already present.
+
         Checks whether the template has already been downloaded
         :return: True if it has already been downloaded, False otherwise
         """
         return self.path.exists()
 
     def download_template(self) -> bool:
-        """
+        """Attempt to download the template.
+
         Downloads the template file from the URL and stores it in the specified filepath
         :return: True if the download succeeds, false otherwise
         """
@@ -141,18 +155,20 @@ class TemplateManager:
             with self.path.open("wb") as f:
                 f.write(final_bytes)
 
-            return True
-
-        except Exception as e:
+        except Exception:
             return False
+
+        else:
+            return True
 
     def write_into_cell(self,
                         sheet_name: str,
-                        value: str | int | float | datetime | DisabilityStatus | None,
+                        value: str | float | datetime | DisabilityStatus | None,
                         row: int,
                         col: int | None = None,
                         col_header: str | tuple[str, ...] | None = None) -> bool:
-        """
+        """Write data into the specified cell in the template.
+
         Method used for writing into a certain cell of the template
         :param sheet_name: sheet the cell is in
         :param value: value to put into the cell
@@ -178,13 +194,15 @@ class TemplateManager:
                 return False
             sheet.cell(row, col).value = value
 
-            return True
-
         except (IndexError, KeyError, TypeError, AttributeError):
             return False
 
+        else:
+            return True
+
     def write_file(self, destination: Path) -> bool:
-        """
+        """Write the filled out template into the specified destination.
+
         Writes the processed template to a file, to the location specified by the destination param
         :param destination: Path representation of the folder to write into
         :return: bool, indicating success or failure of the write
@@ -196,15 +214,17 @@ class TemplateManager:
             destination.parent.mkdir(parents=True, exist_ok=True)
             self.template.save(destination)
 
-            return True
-
         except (PermissionError, OSError):
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                          error_message="Zpracovaný soubor se nepodařilo uložit!")
             return False
 
+        else:
+            return True
+
     def load_template_into_memory(self) -> bool:
-        """
+        """Load the template into the program memory.
+
         Loads the downloaded template into memory, like a good TemplateManager should
         :return: bool indicating success or failure of the load
         """
@@ -212,15 +232,18 @@ class TemplateManager:
             self.template = openpyxl.load_workbook(filename=self.path,
                                                    data_only=False)
 
-            return True
-        except Exception as e:
+        except Exception:
             return False
+
+        else:
+            return True
 
     def build_col_map(self,
                       sheet_name: str,
                       headers: tuple[tuple[str, ...], ...],
                       max_row: int = 30) -> None:
-        """
+        """Build a column map from the template.
+
         Builds the column map for openpyxl to later use when writing into the template
         :param sheet_name: sheet for which the column map is to be built
         :param headers: headers of the columns to be found
@@ -248,7 +271,8 @@ class TemplateManager:
                                 ws: Worksheet,
                                 header: str | tuple | Enum,
                                 max_row: int) -> int | None:
-        """
+        """Find a column based on its header and return that columns number.
+
         Locates a column by the header (or headers in the case of a multiIndex sheet) provided
         :param ws: worksheet to search
         :param header: header to look out for
@@ -278,11 +302,11 @@ class TemplateManager:
         return None
 
     def reload_template(self) -> bool:
-        """
+        """Save and reopen the template to reload macros.
+
         Saves the loaded template workbook back onto the disk and forces the formulas inside to run
         and update the sheets accordingly
         """
-
         try:
             pythoncom.CoInitialize()
 
@@ -299,17 +323,21 @@ class TemplateManager:
 
             self.template = openpyxl.load_workbook(self.path,
                                                    data_only=False)
-            return True
+
         except (PermissionError, OSError) as e:
             raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
                            error_message="Chyba během znovunačítání šablony.") from e
+
+        else:
+            return True
 
         finally:
             pythoncom.CoUninitialize()
 
     @staticmethod
     def __get_cell_value(ws: Worksheet, row: int, col: int) -> Any:
-        """
+        """Retrieve the value in a cell at certain coordinates in a given sheet.
+
         Defines logic for getting the value of a cell, custom logic is required to handle merged
         cells
         :param ws: worksheet in which the cell is located

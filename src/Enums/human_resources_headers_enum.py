@@ -1,16 +1,11 @@
-"""
-This module defines the HumanResourcesHeaders class containing the header values of all the
-relevant columns in the human resources sheet
-"""
+"""Defines an enum containing headers found in the HR sheet."""
 
 from enum import StrEnum
 
 
 class HumanResourcesHeaders(StrEnum):
-    """
-    The HumanResourcesHeaders class contains the header values of all the relevant columns in the
-    human resources sheet
-    """
+    """Contains headers found in the HR sheet."""
+
     SURNAME = "Příjmení"
     FIRST_NAME = "Jméno"
     PERSONAL_NUM = "Osobní číslo"

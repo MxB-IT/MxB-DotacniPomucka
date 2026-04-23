@@ -1,30 +1,30 @@
-"""
-This module defines the LabelBase class which is used to define the basic characteristics of every
-single ctkLabel used within the app GUI
-"""
-from tkinter import Canvas
+"""Defines the base class for all the labels within the project."""
+from typing import TYPE_CHECKING, Any
 
 from customtkinter import CTkFrame, CTkLabel
 
-from src.Enums import ColorEnum
+from src.Enums import ColourEnum
+
+if TYPE_CHECKING:
+    from tkinter import Canvas
 
 
 class LabelBase(CTkLabel):
-    """
-    class used for all label widgets in the app
-    """
+    """Base class for all labels within the project."""
+
     def __init__(self,
-                 *args,
+                 *args: tuple[Any, ...],
                  master: CTkFrame | Canvas,
-                 text_color: str | ColorEnum = ColorEnum.MXB_RED,
-                 **kwargs):
-        """
-        initializer method used for initialization of the label widgets, calls the super
-        initializer with passed args
-        :param args: non-keyword arguments
-        :param master: master of the label widgets, either a CTkFrame or a Canvas
-        :param text_color: color of the label text, either a string or a ColorEnum value
-        :param kwargs: keyword arguments
+                 text_color: str | ColourEnum = ColourEnum.MXB_RED,
+                 **kwargs: Any) -> None:
+        """Initialise the Label.
+
+        Initialises the label with the passed arguments.
+        :param args: Positional arguments for the parent CTkLabel class.
+        :param master: Master widget.
+        :param text_color: Colour for the text held by the label.
+        :param kwargs: Keyword arguments for the parent CTkLabel class.
+        :return: None
         """
         super().__init__(*args,
                          master=master,

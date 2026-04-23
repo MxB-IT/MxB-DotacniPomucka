@@ -1,14 +1,10 @@
-"""
-This module defines an enum containing the column headers present in the employee sheet in the
-template
-"""
+"""Defines an enum containing the headers present in the employee sheet."""
 from enum import StrEnum
 
 
 class EmployeeSheetHeaders(StrEnum):
-    """
-    This enum contains all the relevant column headers present in the employee sheet
-    """
+    """Contains all the relevant column headers present in the employee sheet."""
+
     BLANK = ""
     MONTH = "Měsíc:"
     SURNAME = "Příjmení"

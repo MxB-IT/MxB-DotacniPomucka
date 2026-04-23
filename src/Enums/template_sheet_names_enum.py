@@ -1,15 +1,10 @@
-"""
-This module contains the enum for sheet names in the government Excel template, doing it like this,
-so I don't have to type them out whenever I actually need them
-"""
+"""Defines an enum containing the names of all sheets found in the template."""
 from enum import StrEnum
 
 
 class TemplateSheetNames(StrEnum):
-    """
-    This class serves as an enum with the sheet names in the government Excel template encoded
-    within it to nesure I do not make a typo anywhere
-    """
+    """Contains the names of all sheets found in the template."""
+
     INTRO_SHEET = "1) Úvodní list"
     EMPLOYEE_LIST = "2) seznam zaměstnanců OZP"
     PROV_ASSISTANCE = "3) nákl. prov. asistence"

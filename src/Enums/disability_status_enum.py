@@ -1,16 +1,11 @@
-"""
-This module defines the enumertaion of all the possible disability statuses that the government
-Excel template accepts
-"""
+"""Defines the enum containing all disability statuses."""
 
 from enum import StrEnum
 
 
 class DisabilityStatus(StrEnum):
-    """
-    This class contains the enumeration of all the possible disability statuses that the government
-    Excel template recognises
-    """
+    """Contains the enumeration of all the disability statuses used in the app."""
+
     TZP = "TZP"
     OZP12 = "OZP12"
     OZZ = "OZZ"

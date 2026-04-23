@@ -1,8 +1,6 @@
-"""
-The success_handler module defines the SuccessHandler class used to display to the user that the
-app succeeded in its task inside a pop-up window
-"""
+"""Defines the class used to service the GUI pertaining to showing a success of teh app."""
 from tkinter.constants import BOTH
+from typing import Any
 
 from customtkinter import CTkToplevel
 
@@ -10,24 +8,27 @@ from src.Widgets import ButtonBase, FrameBase, LabelBase
 
 
 class SuccessHandler(CTkToplevel):
-    """
-    Used to initialize a window indicating a success of the underlying script, carrying a default
-    success message
-    """
-    def __init__(self):
+    """Used to initialize a window indicating a success of the app."""
+
+    def __init__(self) -> None:
+        """Initialise the SuccessHandler.
+
+        Initialises the SuccessHandler, creating a window with a default success message.
+        :return: None.
+        """
         super().__init__()
         self.title("Úspěch!")
-        self.frame = FrameBase(master=self)
+        self.frame: FrameBase = FrameBase(master=self)
         self.frame.pack(fill=BOTH,
                         expand=True)
 
-        self.widgets = list()
+        self.widgets: list[Any] = []
 
-        self.label = LabelBase(master=self.frame,
+        self.label: LabelBase = LabelBase(master=self.frame,
                                text="Excel soubor úspěšně zpracován")
         self.widgets.append(self.label)
 
-        self.button = ButtonBase(master=self.frame,
+        self.button: ButtonBase = ButtonBase(master=self.frame,
                                  command=self.destroy,
                                  text="OK")
         self.widgets.append(self.button)

@@ -1,9 +1,13 @@
-"""Defines the mappings for translating insurance company names to their numbers"""
+"""Defines the mapper for translating insurance company names to their numbers."""
 from types import MappingProxyType
+
+from src.Enums import ErrNoEnum
+from src.Utils.app_error import AppError
 
 
 class InsuranceCompanyMapper:
-    """Defines the mappings for translating insurance company names to their numbers"""
+    """Defines the mappings for translating insurance company names to their numbers."""
+
     _MAPPING: MappingProxyType[str, int] = MappingProxyType({
         "Všeobecná zdravotní pojišťovna ČR": 111,
         "Vojenská zdravotní pojišťovna ČR": 201,
@@ -11,18 +15,21 @@ class InsuranceCompanyMapper:
         "Oborová zdravotní pojišťovna zaměstnanců bank, pojišťoven a stavebnictví": 207,
         "Zaměstnanecká pojišťovna Škoda": 209,
         "Zdravotní pojišťovna ministerstva vnitra ČR": 211,
-        "RBP, zdravotní pojišťovna": 213
+        "RBP, zdravotní pojišťovna": 213,
     })
 
     @classmethod
     def from_str(cls, value: str) -> int:
-        """
+        """Convert insurance company name to its insurance company number.
+
         Converts the given string to an insurance company number
         :param value: string to convert to an insurance company number
         :return: int representing the company number
-        :raises ValueError: if an invalid string is passed
+        :raises AppError: if an invalid string is passed
         """
         try:
             return cls._MAPPING[value]
         except KeyError as e:
-            raise ValueError(f"Invalid insurance company name: {value}") from e
+            raise AppError(
+                error_code=ErrNoEnum.INTERNAL_ERROR,
+                error_message=f"Invalid insurance company name: {value}") from e

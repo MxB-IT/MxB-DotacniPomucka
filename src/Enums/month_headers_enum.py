@@ -1,15 +1,10 @@
-"""
-This module defines the MonthHeaders class, a StrEnum containing the values of all the relevant
-column headers within the month sheets
-"""
+"""Defines an enum containing all the headers found in the month sheets."""
 from enum import StrEnum
 
 
 class MonthHeaders(StrEnum):
-    """
-    The MonthHeaders class contains enummed values of all the relevant column headers within the
-    month sheets
-    """
+    """Contains all the relevant headers found in the month sheet."""
+
     PERSONAL_NUM = "Osobní číslo"
     BIRTH_NUM = "Rodné číslo"
     CONTRACT_START = "Dat vstupu"

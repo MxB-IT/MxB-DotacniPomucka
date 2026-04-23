@@ -1,17 +1,14 @@
-"""
-This module contains the IntMonthMapper class, containing the mappings from ints to months in the
-MonthEnum, allowing me to easily transform an intrger into a MonthEnum value
-"""
+"""Defines a mapper that maps numbers to month enum values."""
 from types import MappingProxyType
 
-from src.Enums import MonthEnum
+from src.Enums import ErrNoEnum, MonthEnum
+from src.Utils.app_error import AppError
 
 
 class IntMonthMapper:
-    """
-    The IntMonthMapper class handles mapping ints to MonthEnum values
-    """
-    _MAPPING = MappingProxyType({
+    """Contains a mapping, allowing numbers to be mapped to month enum values."""
+
+    _MAPPING: MappingProxyType[int, MonthEnum] = MappingProxyType({
         1: MonthEnum.JAN,
         2: MonthEnum.FEB,
         3: MonthEnum.MAR,
@@ -28,7 +25,8 @@ class IntMonthMapper:
 
     @classmethod
     def from_int(cls, value: int) -> MonthEnum:
-        """
+        """Get a month enum value from the given integer value.
+
         Converts an integer to a MonthEnum value, raises ValueError if invalid
         :param value: integer to convert into a MonthEnum
         :return: MonthEnum
@@ -37,4 +35,6 @@ class IntMonthMapper:
         try:
             return cls._MAPPING[value]
         except KeyError as e:
-            raise ValueError(f"Invalid month number: {value}") from e
+            raise AppError(
+                error_code=ErrNoEnum.INTERNAL_ERROR,
+                error_message=f"Invalid month number: {value}") from e

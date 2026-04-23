@@ -1,24 +1,18 @@
-"""
-This module defines the ResourceFinder class, it is never meant to be instantiated and contains a
-single method used to locate tkinter resources like images,fonts and such during runtime and
-development
-"""
+"""Defines a class used to find the resources needed to run the application."""
 import sys
 from pathlib import Path
 
 
 class ResourceFinder:
-    """
-    The ReourceFinder class is never meant to be instantiated and contains only one static method
-    meant to be used to locate where certain tkinter resources (images, fonts, etc.) are located
-    during runtime and development
-    """
+    """Contains a method used to check whether resources are in cwd or tempfolder."""
+
     @staticmethod
     def resource_path(relative_path: Path) -> Path:
-        """
+        """Get path to a requested resource.
+
         Get absolute path to resource, works for dev and for PyInstaller.
-        :param relative_path: relative path to the resource, IE where it is
-        :return: path to the resource during runtime
+        :param relative_path: Relative path to the resource, IE where it is.
+        :return: Path to the resource during runtime.
         """
         try:
             base_path = Path(sys._MEIPASS)

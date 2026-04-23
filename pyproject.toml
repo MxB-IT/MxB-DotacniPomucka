@@ -36,39 +36,7 @@ output-format = "full"
 
 [tool.ruff.lint]
 select = [
-    "A",
-    "BLE001",
-    "B",
-    "C4",
-    "C90",
-    "DTZ",
-    "D100",
-    "D101",
-    "D102",
-    "D206",
-    "D207",
-    "D208",
-    "D209",
-    "D210",
-    "E",
-    "EXE",
-    "FIX",
-    "F",
-    "ISC",
-    "I",
-    "INP",
-    "LOG",
-    "N",
-    "PERF",
-    "PTH",
-    "PIE",
-    "Q",
-    "RUF",
-    "RET",
-    "S",
-    "SIM",
-    "UP",
-    "W"
+    "ALL"
 ]
 
 ignore = [

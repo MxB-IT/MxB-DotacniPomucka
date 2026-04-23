@@ -1,23 +1,27 @@
-"""
-This module defines the ProgressBarBase class that is used to determine the basic characteristics
-of every single ctkProgressBar used within the app GUI
-"""
+"""Defines the base class for the progress bar in this project."""
+from typing import Any
+
 from customtkinter import CTkProgressBar
 
-from src.Enums import ColorEnum
+from src.Enums import ColourEnum
 
 
 class ProgressBarBase(CTkProgressBar):
-    """
-    Class containing basic definitions for all progress bars present in the app, mainly
-    automatically sets the colors
-    for the underlying CTkProgressBar class.
-    """
+    """Defines the base behaviour for all progress bars in this project."""
+
     def __init__(self,
-                 *args,
-                 fg_color=ColorEnum.MXB_RED,
-                 progress_color="white",
-                 **kwargs):
+                 *args: tuple[Any, ...],
+                 fg_color: ColourEnum=ColourEnum.MXB_RED,
+                 progress_color: ColourEnum=ColourEnum.WHITE,
+                 **kwargs: Any):
+        """Initialise the ProgressBarBase.
+
+        Initialises the ProgressBarBase, modifying its base behaviour based on its arguments.
+        :param args: Any positional arguments to be passed to the CTkProgressBar superclass.
+        :param fg_color: Colour of the progress bar while in focus.
+        :param progress_color: Colour of the progress bar inside the container.
+        :param kwargs: Any keyword arguments to be passed to the CTkProgressBar superclass.
+        """
         super().__init__(*args,
                          fg_color=fg_color,
                          progress_color=progress_color,

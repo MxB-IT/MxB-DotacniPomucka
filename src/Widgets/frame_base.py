@@ -1,34 +1,34 @@
-"""
-This module defines the FrameBase that defines the basic characteristics of every single ctkFrame
-that will be used within the app GUI
-"""
-from tkinter import Canvas
+"""Defines the base class for all Frames within the project."""
+from typing import TYPE_CHECKING, Any
 
 from customtkinter import CTkFrame, CTkToplevel
 
-from src.Enums import ColorEnum
+from src.Enums import ColourEnum
+
+if TYPE_CHECKING:
+    from tkinter import Canvas
 
 
 class FrameBase(CTkFrame):
-    """
-    class used for all the frames an app will need, inherits from CTkFrame
-    """
+    """Base class for all Frames within the project."""
+
     def __init__(self,
-                 *args,
+                 *args: tuple[Any, ...],
                  master: CTkFrame | Canvas | CTkToplevel,
-                 fg_color: str | ColorEnum = "white",
-                 border_color: str | ColorEnum = ColorEnum.MXB_RED,
+                 fg_color: str | ColourEnum = "white",
+                 border_color: str | ColourEnum = ColourEnum.MXB_RED,
                  border_width: int = 2,
-                 **kwargs):
-        """
-        initialization method used whenever a new Frame needs to be intialized, passes all
-        arguments to the super initializer
-        :param args: any non-keyword arguments
-        :param master: master of the Frame
-        :param fg_color: color of the Frame
-        :param border_color: color of the Frame's border
-        :param border_width: width of the Frame's border
-        :param kwargs: any keyword arguments
+                 **kwargs: Any) -> None:
+        """Initialise the Frame.
+
+        Initialises the Frame with passed arguments.
+        :param args: Positional arguments for the CTkFrame superclass.
+        :param master: Master widget.
+        :param fg_color: Colour of the Frame.
+        :param border_color: Border colour of the Frame.
+        :param border_width: Border width of the Frame.
+        :param kwargs: Keyword arguments for the CTkFrame superclass.
+        :return: None
         """
         super().__init__(*args,
                          master=master,
