@@ -10,5 +10,6 @@ class MonthHeaders(StrEnum):
     CONTRACT_START = "Dat vstupu"
     CONTRACT_END = "Dat odchodu"
     GROSS_PAY = "Hrubá mzda"
-    INSURANCE_PAYMENT = "součet soc + zdrav"
+    COMPANY_SOCIAL_SEC = "Socfirma"
+    COMPANY_INSURANCE = "Zdrfirma"
     PAY_FOR_ACTUAL_WORK = "Záklmzda"

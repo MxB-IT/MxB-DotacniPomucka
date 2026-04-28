@@ -304,8 +304,12 @@ class ExcelProcessor:
 
                 employee.set_gross_pay(month,
                                        float(row[MonthHeaders.GROSS_PAY.value]))
+
+                insurance_payment: float = (float(row[MonthHeaders.COMPANY_INSURANCE.value]) +
+                                            float(row[MonthHeaders.COMPANY_SOCIAL_SEC.value]))
+
                 employee.set_insurance_payment(month,
-                                               float(row[MonthHeaders.INSURANCE_PAYMENT.value]))
+                                               insurance_payment)
                 employee.set_pay_for_actual_work(month,
                                                  float(row[MonthHeaders.PAY_FOR_ACTUAL_WORK.value]))
 
