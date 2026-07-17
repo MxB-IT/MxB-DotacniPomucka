@@ -284,7 +284,6 @@ class ExcelProcessor:
 
                     employee.set_birth_num(row[MonthHeaders.BIRTH_NUM.value])
                     employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START.value])
-                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END.value])
 
                     employee.set_surname(hr_row[HumanResourcesHeaders.SURNAME.value])
                     employee.set_first_name(hr_row[HumanResourcesHeaders.FIRST_NAME])
@@ -301,6 +300,9 @@ class ExcelProcessor:
 
                 else:
                     employee = self.employee_data[personal_num]
+
+                if employee.get_contract_end_date() is None and not pd.isna(row[MonthHeaders.CONTRACT_END.value]):
+                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END.value])
 
                 employee.set_gross_pay(month,
                                        float(row[MonthHeaders.GROSS_PAY.value]))
