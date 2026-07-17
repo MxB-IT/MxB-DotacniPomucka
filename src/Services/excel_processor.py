@@ -34,7 +34,7 @@ class ExcelProcessor:
         self.template: pd.ExcelFile | None = None
         self.template_manager: TemplateManager | None = None
         self.employee_data: dict[int, Employee] = {}
-        self.__data_months: dict[str, pd.DataFrame | None] = {}
+        self.data_months: dict[str, pd.DataFrame | None] = {}
         self.__year: int | None = None
         self.__quarter: int | None = None
 
@@ -109,7 +109,7 @@ class ExcelProcessor:
             raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
                            error_message="Chyba během znovunačítání Excelu")
 
-        if self.__data_months is None:
+        if self.data_months is None:
             return False
 
         headers: tuple[tuple[str, ...], ...] = self.__construct_headers()
@@ -123,12 +123,12 @@ class ExcelProcessor:
 
         for employee in self.employee_data.values():
 
-            if not employee.was_active_in_quarter(months=self.__data_months):
+            if not employee.was_active_in_quarter(months=self.data_months):
                 continue
 
             time.sleep(0.001)
 
-            for month in self.__data_months:
+            for month in self.data_months:
 
                 self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
                                                       col_header=
@@ -252,10 +252,10 @@ class ExcelProcessor:
         human_resources: pd.DataFrame = cast("pd.DataFrame",
                                              self.data.parse(self.data.sheet_names[3]))
 
-        for idx, key in enumerate(self.__data_months):
-            self.__data_months[key] = month_dataframes[idx]
+        for idx, key in enumerate(self.data_months):
+            self.data_months[key] = month_dataframes[idx]
 
-        for month_key, month_sheet in self.__data_months.items():
+        for month_key, month_sheet in self.data_months.items():
             if month_sheet is None:
                 continue
 
@@ -271,12 +271,11 @@ class ExcelProcessor:
                         human_resources[HumanResourcesHeaders.PERSONAL_NUM] == personal_num
                     ]
                     if hr_matches.empty:
-                        ErrorHandler(
-                            error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
-                            error_message="Něco se nepodařilo, zkontrolujte prosím, že každý "
-                            "zaměstnanec je zaveden v tabulce personalistika",
+                        raise AppError(
+                            error_code=ErrNoEnum.ERR_EMPLOYEE_MISSING,
+                            error_message="Něco se nepodařilo, zkontrolujte prosím, že každý zaměstnanec je zaveden v "
+                            "tabulce personalistika, případně že máte správnou tabulku personalistika.",
                         )
-                        return False
 
                     hr_row: pd.DataFrame = hr_matches.iloc[0]
 
@@ -337,24 +336,24 @@ class ExcelProcessor:
         match months:
             case Quarters.FIRST_QUARTER.value:
                 self.__quarter = 1
-                self.__data_months = {MonthEnum.JAN.value : None,
-                                      MonthEnum.FEB.value : None,
-                                      MonthEnum.MAR.value : None}
+                self.data_months = {MonthEnum.JAN.value : None,
+                                    MonthEnum.FEB.value : None,
+                                    MonthEnum.MAR.value : None}
             case Quarters.SECOND_QUARTER.value:
                 self.__quarter = 2
-                self.__data_months = {MonthEnum.APR.value : None,
-                                      MonthEnum.MAY.value : None,
-                                      MonthEnum.JUN.value : None}
+                self.data_months = {MonthEnum.APR.value : None,
+                                    MonthEnum.MAY.value : None,
+                                    MonthEnum.JUN.value : None}
             case Quarters.THIRD_QUARTER.value:
                 self.__quarter = 3
-                self.__data_months = {MonthEnum.JUL.value : None,
-                                      MonthEnum.AUG.value : None,
-                                      MonthEnum.SEP.value : None}
+                self.data_months = {MonthEnum.JUL.value : None,
+                                    MonthEnum.AUG.value : None,
+                                    MonthEnum.SEP.value : None}
             case Quarters.FOURTH_QUARTER.value:
                 self.__quarter = 4
-                self.__data_months = {MonthEnum.OCT.value : None,
-                                      MonthEnum.NOV.value : None,
-                                      MonthEnum.DEC.value : None}
+                self.data_months = {MonthEnum.OCT.value : None,
+                                    MonthEnum.NOV.value : None,
+                                    MonthEnum.DEC.value : None}
             case _:
                 raise AppError(
                     error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
