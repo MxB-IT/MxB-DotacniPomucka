@@ -109,7 +109,7 @@ class ExcelProcessor:
             raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
                            error_message="Chyba během znovunačítání Excelu")
 
-        if self.data_months is None:
+        if self.data_months == {}:
             return False
 
         headers: tuple[tuple[str, ...], ...] = self.__construct_headers()
@@ -249,8 +249,10 @@ class ExcelProcessor:
             cast("pd.DataFrame", self.data.parse(self.data.sheet_names[2])),
         ]
 
-        human_resources: pd.DataFrame = cast("pd.DataFrame",
-                                             self.data.parse(self.data.sheet_names[3]))
+        human_resources: pd.DataFrame = cast(
+            "pd.DataFrame",
+            self.data.parse(self.data.sheet_names[3]),
+        )
 
         for idx, key in enumerate(self.data_months):
             self.data_months[key] = month_dataframes[idx]
