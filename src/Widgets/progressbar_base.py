@@ -3,7 +3,7 @@ from typing import Any
 
 from customtkinter import CTkProgressBar
 
-from src.Enums import ColourEnum
+from Enums import ColourEnum
 
 
 class ProgressBarBase(CTkProgressBar):

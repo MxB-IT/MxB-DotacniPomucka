@@ -7,10 +7,10 @@ from typing import Any
 
 from customtkinter import CTk
 
-from src.Enums import ErrNoEnum
-from src.Services import ExcelProcessor
-from src.Utils import ErrorHandler, SuccessHandler
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum
+from Services import ExcelProcessor
+from Utils import ErrorHandler, SuccessHandler
+from Utils.app_error import AppError
 from Widgets import ButtonBase, FrameBase, LabelBase, ProgressBarBase
 
 

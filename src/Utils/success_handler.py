@@ -4,7 +4,7 @@ from typing import Any
 
 from customtkinter import CTkToplevel
 
-from src.Widgets import ButtonBase, FrameBase, LabelBase
+from Widgets import ButtonBase, FrameBase, LabelBase
 
 
 class SuccessHandler(CTkToplevel):

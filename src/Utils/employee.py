@@ -3,9 +3,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from src.Enums import ErrNoEnum, MonthEnum
-from src.Enums.disability_status_enum import DisabilityStatus
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum, MonthEnum
+from Enums.disability_status_enum import DisabilityStatus
+from Utils.app_error import AppError
 
 
 class Employee:

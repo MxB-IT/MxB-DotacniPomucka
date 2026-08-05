@@ -5,6 +5,7 @@ from enum import StrEnum
 class EmployeeSheetHeaders(StrEnum):
     """Contains all the relevant column headers present in the employee sheet."""
 
+    PERSONAL_NUM = "Osobní číslo"
     BLANK = ""
     MONTH = "Měsíc:"
     SURNAME = "Příjmení"

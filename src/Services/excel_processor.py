@@ -5,19 +5,19 @@ from typing import cast
 
 import pandas as pd
 
-from src.Enums import MonthEnum
-from src.Enums.employee_sheet_headers import EmployeeSheetHeaders
-from src.Enums.err_no_enum import ErrNoEnum
-from src.Enums.human_resources_headers_enum import HumanResourcesHeaders
-from src.Enums.month_headers_enum import MonthHeaders
-from src.Enums.quarter_enum import Quarters
-from src.Enums.template_sheet_names_enum import TemplateSheetNames
-from src.Mappers.disability_type_mapper import DisabilityTypeMapper
-from src.Mappers.insurance_company_mapper import InsuranceCompanyMapper
-from src.Services.template_manager import TemplateManager
-from src.Utils.app_error import AppError
-from src.Utils.employee import Employee
-from src.Utils.error_handler import ErrorHandler
+from Enums import MonthEnum
+from Enums.employee_sheet_headers import EmployeeSheetHeaders
+from Enums.err_no_enum import ErrNoEnum
+from Enums.human_resources_headers_enum import HumanResourcesHeaders
+from Enums.month_headers_enum import MonthHeaders
+from Enums.quarter_enum import Quarters
+from Enums.template_sheet_names_enum import TemplateSheetNames
+from Mappers.disability_type_mapper import DisabilityTypeMapper
+from Mappers.insurance_company_mapper import InsuranceCompanyMapper
+from Services.template_manager import TemplateManager
+from Utils.app_error import AppError
+from Utils.employee import Employee
+from Utils.error_handler import ErrorHandler
 
 
 class ExcelProcessor:
@@ -249,10 +249,31 @@ class ExcelProcessor:
             cast("pd.DataFrame", self.data.parse(self.data.sheet_names[2])),
         ]
 
+        for month in month_dataframes:
+            month.set_index(EmployeeSheetHeaders.PERSONAL_NUM.value)
+
         human_resources: pd.DataFrame = cast(
             "pd.DataFrame",
             self.data.parse(self.data.sheet_names[3]),
         )
+
+        human_resources.set_index(HumanResourcesHeaders.PERSONAL_NUM.value)
+
+        keys: list[str] = list(self.data_months.keys())
+        keys.append("HR")
+
+        employees_df: pd.Dataframe = pd.concat(
+            [month_dataframes[0], month_dataframes[1], month_dataframes[2], human_resources],
+            axis=1,
+            keys=keys,
+        )
+
+        employees_df.to_html(
+            "testHtml.html",
+            index=True,
+        )
+
+        return True
 
         for idx, key in enumerate(self.data_months):
             self.data_months[key] = month_dataframes[idx]

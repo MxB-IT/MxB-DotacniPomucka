@@ -1,8 +1,8 @@
 """Defines the mapper for translating insurance company names to their numbers."""
 from types import MappingProxyType
 
-from src.Enums import ErrNoEnum
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum
+from Utils.app_error import AppError
 
 
 class InsuranceCompanyMapper:
