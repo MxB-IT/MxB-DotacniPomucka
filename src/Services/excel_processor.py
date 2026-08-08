@@ -1,12 +1,12 @@
 """Contains the ExcelProcessor class used for processing the provided input Excel file."""
 import time
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
 from Enums import MonthEnum
-from Enums.employee_sheet_headers import EmployeeSheetHeaders
+from Enums.employee_data_headers import EmployeeDataHeaders
+from Enums.employee_input_headers import EmployeeSheetHeaders
 from Enums.err_no_enum import ErrNoEnum
 from Enums.human_resources_headers_enum import HumanResourcesHeaders
 from Enums.month_headers_enum import MonthHeaders
@@ -18,6 +18,9 @@ from Services.template_manager import TemplateManager
 from Utils.app_error import AppError
 from Utils.employee import Employee
 from Utils.error_handler import ErrorHandler
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class ExcelProcessor:
@@ -33,7 +36,7 @@ class ExcelProcessor:
         self.data: pd.ExcelFile | None = None
         self.template: pd.ExcelFile | None = None
         self.template_manager: TemplateManager | None = None
-        self.employee_data: dict[int, Employee] = {}
+        self.employee_data: pd.DataFrame
         self.data_months: dict[str, pd.DataFrame | None] = {}
         self.__year: int | None = None
         self.__quarter: int | None = None
@@ -249,95 +252,108 @@ class ExcelProcessor:
             cast("pd.DataFrame", self.data.parse(self.data.sheet_names[2])),
         ]
 
-        for month in month_dataframes:
-            month.set_index(EmployeeSheetHeaders.PERSONAL_NUM.value)
+        month_dataframes = [month.set_index(EmployeeSheetHeaders.PERSONAL_NUM.value) for month in month_dataframes]
 
         human_resources: pd.DataFrame = cast(
             "pd.DataFrame",
             self.data.parse(self.data.sheet_names[3]),
         )
 
-        human_resources.set_index(HumanResourcesHeaders.PERSONAL_NUM.value)
+        human_resources = human_resources.set_index(HumanResourcesHeaders.PERSONAL_NUM.value)
 
         keys: list[str] = list(self.data_months.keys())
-        keys.append("HR")
 
-        employees_df: pd.Dataframe = pd.concat(
-            [month_dataframes[0], month_dataframes[1], month_dataframes[2], human_resources],
+        grouped_employees_df: pd.DataFrame = pd.concat(
+            month_dataframes,
             axis=1,
             keys=keys,
         )
 
-        employees_df.to_html(
-            "testHtml.html",
-            index=True,
+        human_resources.columns = pd.MultiIndex.from_product(
+            [["HR"], human_resources.columns],
         )
 
-        return True
+        grouped_employees_df = grouped_employees_df.join(
+            human_resources,
+            how="inner",
+        )
 
-        for idx, key in enumerate(self.data_months):
-            self.data_months[key] = month_dataframes[idx]
+        start_dates: pd.DataFrame | pd.Series[Any] = grouped_employees_df.xs(
+            MonthHeaders.CONTRACT_START.value,
+            level=1,
+            axis=1,
+        )
 
-        for month_key, month_sheet in self.data_months.items():
-            if month_sheet is None:
-                continue
+        start_dates = start_dates.bfill(
+            axis=1,
+        ).iloc[:, 0]
 
-            month: MonthEnum = MonthEnum(month_key)
+        end_dates: pd.DataFrame | pd.Series[Any] = grouped_employees_df.xs(
+            MonthHeaders.CONTRACT_END.value,
+            level=1,
+            axis=1,
+        )
 
-            records = month_sheet.to_dict("records")
+        end_dates = end_dates.bfill(
+            axis=1,
+        ).iloc[:, 0]
 
-            for row in records:
-                personal_num: int = int(row[MonthHeaders.PERSONAL_NUM])
+        grouped_employees_df.to_html(
+            "./groupedHtml.html",
+        )
 
-                if personal_num not in self.employee_data:
-                    hr_matches: pd.DataFrame = human_resources.loc[
-                        human_resources[HumanResourcesHeaders.PERSONAL_NUM] == personal_num
-                    ]
-                    if hr_matches.empty:
-                        raise AppError(
-                            error_code=ErrNoEnum.ERR_EMPLOYEE_MISSING,
-                            error_message="Něco se nepodařilo, zkontrolujte prosím, že každý zaměstnanec je zaveden v "
-                            "tabulce personalistika, případně že máte správnou tabulku personalistika.",
-                        )
-
-                    hr_row: pd.DataFrame = hr_matches.iloc[0]
-
-                    employee: Employee = Employee()
-
-                    employee.set_birth_num(row[MonthHeaders.BIRTH_NUM.value])
-                    employee.set_contract_start_date(row[MonthHeaders.CONTRACT_START.value])
-
-                    employee.set_surname(hr_row[HumanResourcesHeaders.SURNAME.value])
-                    employee.set_first_name(hr_row[HumanResourcesHeaders.FIRST_NAME])
-                    employee.set_insurance_code(InsuranceCompanyMapper
-                                                .from_str(hr_row[HumanResourcesHeaders.INSURANCE_COMPANY]))
-                    employee.set_disability_status(DisabilityTypeMapper
-                                                   .from_int(int(hr_row[HumanResourcesHeaders.DISABILITY_STATUS])))
-                    employee.set_disability_recognised_from(hr_row[HumanResourcesHeaders.DISABILITY_START])
-                    try:
-                        employee.get_disability_recognised_from()
-                        employee.get_disability_status()
-                    except AppError:
-                        continue
-
-                else:
-                    employee = self.employee_data[personal_num]
-
-                if employee.get_contract_end_date() is None and not pd.isna(row[MonthHeaders.CONTRACT_END.value]):
-                    employee.set_contract_end_date(row[MonthHeaders.CONTRACT_END.value])
-
-                employee.set_gross_pay(month,
-                                       float(row[MonthHeaders.GROSS_PAY.value]))
-
-                insurance_payment: float = (float(row[MonthHeaders.COMPANY_INSURANCE.value]) +
-                                            float(row[MonthHeaders.COMPANY_SOCIAL_SEC.value]))
-
-                employee.set_insurance_payment(month,
-                                               insurance_payment)
-                employee.set_pay_for_actual_work(month,
-                                                 float(row[MonthHeaders.PAY_FOR_ACTUAL_WORK.value]))
-
-                self.employee_data[personal_num] = employee
+        self.employee_data = pd.DataFrame(
+            data={
+                EmployeeDataHeaders.SURNAME: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.SURNAME.value)
+                ],
+                EmployeeDataHeaders.FIRST_NAME: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.FIRST_NAME.value)
+                ],
+                EmployeeDataHeaders.BIRTH_NUM: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.BIRTH_NUM.value)
+                ],
+                EmployeeDataHeaders.CONTRACT_START_DATE: start_dates,
+                EmployeeDataHeaders.CONTRACT_END_DATE: end_dates,
+                EmployeeDataHeaders.INSURANCE_CODE: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.INSURANCE_COMPANY.value)
+                ],
+                EmployeeDataHeaders.DISABILITY_RECOGNISED_FROM: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.DISABILITY_START.value)
+                ],
+                EmployeeDataHeaders.DISABILITY_RECOGNISED_TO: pd.NaT,
+                EmployeeDataHeaders.DISABILITY_STATUS: grouped_employees_df[
+                    ("HR", HumanResourcesHeaders.DISABILITY_STATUS.value)
+                ],
+                EmployeeDataHeaders.GROSS_PAY_FIRST_MONTH: grouped_employees_df[
+                    (keys[0], MonthHeaders.GROSS_PAY.value)
+                ],
+                EmployeeDataHeaders.GROSS_PAY_SECOND_MONTH: grouped_employees_df[
+                    (keys[1], MonthHeaders.GROSS_PAY.value)
+                ],
+                EmployeeDataHeaders.GROSS_PAY_THIRD_MONTH: grouped_employees_df[
+                    (keys[2], MonthHeaders.GROSS_PAY.value)
+                ],
+                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_FIRST_MONTH: grouped_employees_df[
+                    (keys[0], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
+                ],
+                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_SECOND_MONTH: grouped_employees_df[
+                    (keys[1], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
+                ],
+                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_THIRD_MONTH: grouped_employees_df[
+                    (keys[2], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
+                ],
+                EmployeeDataHeaders.INSURANCE_PAYMENT_FIRST_MONTH: grouped_employees_df[
+                    (keys[0], MonthHeaders.COMPANY_INSURANCE.value)
+                ],
+                EmployeeDataHeaders.INSURANCE_PAYMENT_SECOND_MONTH: grouped_employees_df[
+                    (keys[1], MonthHeaders.COMPANY_INSURANCE.value)
+                ],
+                EmployeeDataHeaders.INSURANCE_PAYMENT_THIRD_MONTH: grouped_employees_df[
+                    (keys[2], MonthHeaders.COMPANY_INSURANCE.value)
+                ],
+            },
+        )
 
         return True
 

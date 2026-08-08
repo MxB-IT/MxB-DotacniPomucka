@@ -12,3 +12,4 @@ class HumanResourcesHeaders(StrEnum):
     INSURANCE_COMPANY = "Pojišťovna"
     DISABILITY_STATUS = "Typ omezení"
     DISABILITY_START = "Přiznané od"
+    BIRTH_NUM = "Rodné číslo"
