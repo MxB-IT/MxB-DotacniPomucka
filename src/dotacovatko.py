@@ -141,7 +141,7 @@ class Dotacovatko(CTk):
         self._bg_process = multiprocessing.Process(
             target=Dotacovatko.run_background_processing,
             args=(self._queue, input_path, output_dir),
-            daemon=True
+            daemon=True,
         )
 
         self._bg_process.start()
@@ -211,10 +211,12 @@ class Dotacovatko(CTk):
             queue.put(("success", "done"))
 
         except AppError as e:
+            print("AppError", e)
             queue.put(("error", (e.error_code, e.error_message)))
 
-        except Exception as e:
-            queue.put(("error", str(e)))
+        #except Exception as e:
+        #    print("exception", e)
+        #    queue.put(("error", str(e)))
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()

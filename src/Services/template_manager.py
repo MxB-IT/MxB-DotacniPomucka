@@ -265,7 +265,7 @@ class TemplateManager:
 
     def __find_column_by_header(self,
                                 ws: Worksheet,
-                                header: str | tuple | Enum,
+                                header: str | tuple[str, ...] | Enum,
                                 max_row: int) -> int | None:
         """Find a column based on its header and return that columns number.
 

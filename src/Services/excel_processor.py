@@ -1,7 +1,9 @@
 """Contains the ExcelProcessor class used for processing the provided input Excel file."""
 import time
-from typing import TYPE_CHECKING, Any, cast
+from pathlib import Path
+from typing import Any, cast
 
+import numpy as np
 import pandas as pd
 
 from Enums import MonthEnum
@@ -16,11 +18,7 @@ from Mappers.disability_type_mapper import DisabilityTypeMapper
 from Mappers.insurance_company_mapper import InsuranceCompanyMapper
 from Services.template_manager import TemplateManager
 from Utils.app_error import AppError
-from Utils.employee import Employee
 from Utils.error_handler import ErrorHandler
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class ExcelProcessor:
@@ -105,8 +103,10 @@ class ExcelProcessor:
         self.__set_year_and_quarter()
 
         if self.template_manager is None:
-            raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
-                           error_message="Interní chyba programu, zkuste to prosím znovu")
+            raise AppError(
+                error_code=ErrNoEnum.INTERNAL_ERROR,
+                error_message="Interní chyba programu, zkuste to prosím znovu",
+            )
 
         if not self.template_manager.reload_template():
             raise AppError(error_code=ErrNoEnum.INTERNAL_ERROR,
@@ -124,113 +124,123 @@ class ExcelProcessor:
 
         row: int = 13
 
-        for employee in self.employee_data.values():
-
-            if not employee.was_active_in_quarter(months=self.data_months):
-                continue
+        for _, employee_row in self.employee_data.iterrows():
 
             time.sleep(0.001)
 
             for month in self.data_months:
 
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.DISABILITY_STATUS.value,
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_disability_status())
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.GROSS_PAY.value,
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_gross_pay(month=MonthEnum(month)))
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.INSURANCE_PAYMENT.value,
-                                                      ),
-                                                      row=row,
-                                                      value=employee.get_insurance_payment(month=MonthEnum(month)))
-                self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                      col_header=
-                                                      (
-                                                          month,
-                                                          EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value,
-                                                      ),
-                                                      row=row,
-                                                      value=1 if employee.get_pay_for_actual_work
-                                                                 (month=MonthEnum(month)) > 0
-                                                      else 0)
+                self.template_manager.write_into_cell(
+                    sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                    col_header=(
+                        month,
+                        EmployeeSheetHeaders.DISABILITY_STATUS.value,
+                    ),
+                    row=row,
+                    value=employee_row[EmployeeDataHeaders.DISABILITY_STATUS.value],
+                )
+                self.template_manager.write_into_cell(
+                    sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                    col_header=(
+                        month.upper(),
+                        EmployeeSheetHeaders.GROSS_PAY.value,
+                    ),
+                    row=row,
+                    value=employee_row[f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(month)}"],
+                )
+                self.template_manager.write_into_cell(
+                    sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                    col_header=(
+                        month.upper(),
+                        EmployeeSheetHeaders.INSURANCE_PAYMENT.value,
+                    ),
+                    row=row,
+                    value=employee_row[f"{EmployeeDataHeaders.INSURANCE_PAYMENT.value}_{MonthEnum(month)}"],
+                )
+                self.template_manager.write_into_cell(
+                    sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                    col_header=(
+                        month.upper(),
+                        EmployeeSheetHeaders.EMPLOYEE_WORKED_THIS_MONTH.value,
+                    ),
+                    row=row,
+                    value=employee_row[f"{EmployeeDataHeaders.EMPLOYEE_WORKED.value}_{MonthEnum(month)}"],
+                )
 
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=(
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.FIRST_NAME.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_first_name())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=(
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.SURNAME.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_surname())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=(
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.BIRTH_NUM.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_birth_num())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=(
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.CONTRACT_START.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_contract_start_date())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=
-                                                  (
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.CONTRACT_END.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_contract_end_date())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=
-                                                  (
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.INSURANCE_COMPANY.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_insurance_code())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=
-                                                  (
-                                                      EmployeeSheetHeaders.BLANK.value,
-                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_disability_recognised_from())
-            self.template_manager.write_into_cell(sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
-                                                  col_header=
-                                                  (
-                                                      "Měsíc:",
-                                                      EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value,
-                                                  ),
-                                                  row=row,
-                                                  value=employee.get_disability_recognised_to())
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.FIRST_NAME.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.FIRST_NAME],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.SURNAME.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.SURNAME],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.BIRTH_NUM.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.BIRTH_NUM],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.CONTRACT_START.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.CONTRACT_START_DATE],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.CONTRACT_END.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.CONTRACT_END_DATE],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.INSURANCE_COMPANY.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.INSURANCE_CODE],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    EmployeeSheetHeaders.BLANK.value,
+                    EmployeeSheetHeaders.DISABILITY_RECOGNITION_FROM.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.DISABILITY_RECOGNISED_FROM],
+            )
+            self.template_manager.write_into_cell(
+                sheet_name=TemplateSheetNames.EMPLOYEE_LIST.value,
+                col_header=(
+                    "Měsíc:",
+                    EmployeeSheetHeaders.DISABILITY_RECOGNITION_TO.value,
+                ),
+                row=row,
+                value=employee_row[EmployeeDataHeaders.DISABILITY_RECOGNISED_TO],
+            )
 
             row += 1
-
 
         self.__save_processed(f"{self.__quarter}Q{self.__year}seznam+zaměstnanců+OZP.xlsx")
 
@@ -298,10 +308,6 @@ class ExcelProcessor:
             axis=1,
         ).iloc[:, 0]
 
-        grouped_employees_df.to_html(
-            "./groupedHtml.html",
-        )
-
         self.employee_data = pd.DataFrame(
             data={
                 EmployeeDataHeaders.SURNAME: grouped_employees_df[
@@ -325,34 +331,121 @@ class ExcelProcessor:
                 EmployeeDataHeaders.DISABILITY_STATUS: grouped_employees_df[
                     ("HR", HumanResourcesHeaders.DISABILITY_STATUS.value)
                 ],
-                EmployeeDataHeaders.GROSS_PAY_FIRST_MONTH: grouped_employees_df[
-                    (keys[0], MonthHeaders.GROSS_PAY.value)
-                ],
-                EmployeeDataHeaders.GROSS_PAY_SECOND_MONTH: grouped_employees_df[
-                    (keys[1], MonthHeaders.GROSS_PAY.value)
-                ],
-                EmployeeDataHeaders.GROSS_PAY_THIRD_MONTH: grouped_employees_df[
-                    (keys[2], MonthHeaders.GROSS_PAY.value)
-                ],
-                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_FIRST_MONTH: grouped_employees_df[
-                    (keys[0], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
-                ],
-                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_SECOND_MONTH: grouped_employees_df[
-                    (keys[1], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
-                ],
-                EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK_THIRD_MONTH: grouped_employees_df[
-                    (keys[2], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)
-                ],
-                EmployeeDataHeaders.INSURANCE_PAYMENT_FIRST_MONTH: grouped_employees_df[
-                    (keys[0], MonthHeaders.COMPANY_INSURANCE.value)
-                ],
-                EmployeeDataHeaders.INSURANCE_PAYMENT_SECOND_MONTH: grouped_employees_df[
-                    (keys[1], MonthHeaders.COMPANY_INSURANCE.value)
-                ],
-                EmployeeDataHeaders.INSURANCE_PAYMENT_THIRD_MONTH: grouped_employees_df[
-                    (keys[2], MonthHeaders.COMPANY_INSURANCE.value)
-                ],
+                f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[0])}": np.where(
+                    grouped_employees_df[(keys[0], MonthHeaders.GROSS_PAY.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[0], MonthHeaders.GROSS_PAY.value)],
+                ),
+                f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[1])}": np.where(
+                    grouped_employees_df[(keys[1], MonthHeaders.GROSS_PAY.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[1], MonthHeaders.GROSS_PAY.value)],
+                ),
+                f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[2])}": np.where(
+                    grouped_employees_df[(keys[2], MonthHeaders.GROSS_PAY.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[2], MonthHeaders.GROSS_PAY.value)],
+                ),
+                f"{EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK.value}_{MonthEnum(keys[0])}": np.where(
+                    grouped_employees_df[(keys[0], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[0], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)],
+                ),
+                f"{EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK.value}_{MonthEnum(keys[1])}": np.where(
+                    grouped_employees_df[(keys[1], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[1], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)],
+                ),
+                f"{EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK.value}_{MonthEnum(keys[2])}": np.where(
+                    grouped_employees_df[(keys[2], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)].isna(),
+                    0,
+                    grouped_employees_df[(keys[2], MonthHeaders.PAY_FOR_ACTUAL_WORK.value)],
+                ),
+                f"{EmployeeDataHeaders.INSURANCE_PAYMENT.value}_{MonthEnum(keys[0])}": np.where(
+                    (grouped_employees_df[(keys[0], MonthHeaders.COMPANY_INSURANCE.value)].isna()) &
+                    (grouped_employees_df[(keys[0], MonthHeaders.COMPANY_SOCIAL_SEC.value)].isna()),
+                    0,
+                    grouped_employees_df[(keys[0], MonthHeaders.COMPANY_INSURANCE.value)] +
+                    grouped_employees_df[(keys[0], MonthHeaders.COMPANY_SOCIAL_SEC.value)],
+                ),
+                f"{EmployeeDataHeaders.INSURANCE_PAYMENT.value}_{MonthEnum(keys[1])}": np.where(
+                    (grouped_employees_df[(keys[1], MonthHeaders.COMPANY_INSURANCE.value)].isna()) &
+                    (grouped_employees_df[(keys[1], MonthHeaders.COMPANY_SOCIAL_SEC.value)].isna()),
+                    0,
+                    grouped_employees_df[(keys[1], MonthHeaders.COMPANY_INSURANCE.value)] +
+                    grouped_employees_df[(keys[1], MonthHeaders.COMPANY_SOCIAL_SEC.value)],
+                ),
+                f"{EmployeeDataHeaders.INSURANCE_PAYMENT.value}_{MonthEnum(keys[2])}": np.where(
+                    (grouped_employees_df[(keys[2], MonthHeaders.COMPANY_INSURANCE.value)].isna()) &
+                    (grouped_employees_df[(keys[2], MonthHeaders.COMPANY_SOCIAL_SEC.value)].isna()),
+                    0,
+                    grouped_employees_df[(keys[2], MonthHeaders.COMPANY_INSURANCE.value)] +
+                    grouped_employees_df[(keys[2], MonthHeaders.COMPANY_SOCIAL_SEC.value)],
+                ),
             },
+        )
+
+        self.employee_data[EmployeeDataHeaders.DISABILITY_STATUS] = self.employee_data[
+            EmployeeDataHeaders.DISABILITY_STATUS
+        ].map(
+            DisabilityTypeMapper.from_int,
+        )
+
+        self.employee_data[EmployeeDataHeaders.INSURANCE_CODE] = self.employee_data[
+            EmployeeDataHeaders.INSURANCE_CODE
+        ].map(
+            InsuranceCompanyMapper.from_str,
+        )
+
+        for key in keys:
+            self.employee_data[f"{EmployeeDataHeaders.EMPLOYEE_WORKED}_{MonthEnum(key)}"] = (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.PAY_FOR_ACTUAL_WORK.value}_{MonthEnum(key)}"
+                ]
+                > 0
+            ).astype(int)
+
+        self.employee_data = self.employee_data[
+            (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.EMPLOYEE_WORKED.value}_{MonthEnum(keys[0])}"
+                ]
+                != 0
+            )
+            | (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.EMPLOYEE_WORKED.value}_{MonthEnum(keys[1])}"
+                ]
+                != 0
+            )
+            | (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.EMPLOYEE_WORKED.value}_{MonthEnum(keys[2])}"
+                ]
+                != 0
+            )
+            | (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[0])}"
+                ]
+                != 0
+            )
+            | (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[1])}"
+                ]
+                != 0
+            )
+            | (
+                self.employee_data[
+                    f"{EmployeeDataHeaders.GROSS_PAY.value}_{MonthEnum(keys[2])}"
+                ]
+                != 0
+            )
+        ]
+
+        self.employee_data.to_excel(
+            "./testExcel.xlsx",
         )
 
         return True
