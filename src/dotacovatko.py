@@ -5,9 +5,10 @@ from queue import Empty
 from tkinter import filedialog
 from typing import Any
 
-from customtkinter import CTk
+from customtkinter import CTk  # type: ignore[import-untyped]
 
 from Enums import ErrNoEnum
+from Enums.queue_status import QueueMessages
 from Services import ExcelProcessor
 from Utils import ErrorHandler, SuccessHandler
 from Utils.app_error import AppError
@@ -26,65 +27,68 @@ class Dotacovatko(CTk):
         """
         super().__init__()
 
-        self._excel_processor: ExcelProcessor = ExcelProcessor()
-
         self.title("Dotační můstek")
 
-        self._frame: FrameBase = FrameBase(master=self)
+        self.__frame: FrameBase = FrameBase(master=self)
 
-        self._frame.pack(fill="both", expand=True)
+        self.__frame.pack(fill="both", expand=True)
 
-        self._progress_bar: ProgressBarBase = ProgressBarBase(master=self._frame,
-                                             mode="indeterminate")
+        self.__progress_bar: ProgressBarBase = ProgressBarBase(master=self.__frame,
+                                                               mode="indeterminate")
 
-        self._widgets: list[Any] = []
+        self.__widgets: list[Any] = []
 
-        self._input_widgets = (ButtonBase(master=self._frame,
-                                          command=self._open_input,
-                                          text="Načíst vstupní tabulku"),
-                               LabelBase(master=self._frame,
+        self.__input_widgets = (ButtonBase(master=self.__frame,
+                                           command=self._open_input,
+                                           text="Načíst vstupní tabulku"),
+                                LabelBase(master=self.__frame,
                                          text="Nebyla načtena žádná vstupní tabulka",
                                          text_color="red"))
-        self._widgets.append(self._input_widgets)
+        self.__widgets.append(self.__input_widgets)
 
-        self._output_widgets = (ButtonBase(master=self._frame,
+        self._output_widgets = (ButtonBase(master=self.__frame,
                                            command=self._choose_output_folder,
                                            text="Zvolit složku pro uložení výsledného souboru"),
-                                LabelBase(master=self._frame,
+                                LabelBase(master=self.__frame,
                                           text=f"Složka pro uložení výsledného souboru: "
                                                f"{Path.cwd().name!s}",
                                           text_color="green"))
-        self._widgets.append(self._output_widgets)
+        self.__widgets.append(self._output_widgets)
 
-        self._start_widgets = (ButtonBase(master=self._frame,
-                                          command=self._threaded_start,
-                                          text="Start"),
-                               LabelBase(master=self._frame,
+        self.__start_widgets = (ButtonBase(master=self.__frame,
+                                           command=self._threaded_start,
+                                           text="Start"),
+                                LabelBase(master=self.__frame,
                                          text=""))
-        self._widgets.append(self._start_widgets)
+        self.__widgets.append(self.__start_widgets)
 
-        self._arrange_widgets()
+        self.__arrange_widgets()
 
-        self._queue: multiprocessing.Queue = multiprocessing.Queue()
-        self._bg_process: multiprocessing.Process | None = None
+        self.__outbound_queue: multiprocessing.Queue[AppError | float | QueueMessages] = multiprocessing.Queue()
+        self.__inbound_queue: multiprocessing.Queue[QueueMessages] = multiprocessing.Queue()
+        self.__bg_process: multiprocessing.Process
+        self.__input_file: Path
+        self.__output_dir: Path
 
-    def _arrange_widgets(self) -> None:
+        self.protocol("WM_DELETE_WINDOW", self.__stop_processing)
+
+    def __arrange_widgets(self) -> None:
         """Arrange widgets into an array.
 
         Arranges widgets into a grid layout within the app's frame, uses the private variables
         self._widgets and self._frame.
         :return: None.
         """
-        for i, row in enumerate(self._widgets):
+        for i, row in enumerate(self.__widgets):
             for j, widget in enumerate(row):
                 widget.grid(row=i,
                             column=j,
                             padx=10,
                             pady=10)
-                self._frame.columnconfigure(index=j,
-                                            weight=1)
-            self._frame.rowconfigure(index=i,
-                                     weight=1)
+                self.__frame.columnconfigure(index=j,
+                                             weight=1)
+            self.__frame.rowconfigure(index=i,
+                                      weight=1)
 
     def _open_input(self) -> None:
         """Prompt the user to choose an input Excel file.
@@ -97,11 +101,11 @@ class Dotacovatko(CTk):
                                                     initialdir=Path.cwd()))
 
         if file_path:
-            self._excel_processor.set_input(file_path)
-            self._input_widgets[1].configure(text=f"Soubor {file_path.name!s} úspěšně načten.",
-                                             text_color="green")
+            self.__input_file = file_path
+            self.__input_widgets[1].configure(text=f"Soubor {file_path.name!s} úspěšně načten.",
+                                              text_color="green")
         else:
-            self._input_widgets[1].configure(
+            self.__input_widgets[1].configure(
                 text="Chyba při otevírání Excel souboru na vstup.",
                 text_color="red")
 
@@ -115,7 +119,7 @@ class Dotacovatko(CTk):
         directory_path = Path(filedialog.askdirectory(initialdir=Path.cwd()))
 
         if directory_path:
-            self._excel_processor.set_output_directory(directory_path)
+            self.__output_dir = directory_path
             self._output_widgets[1].configure(text=f"Složka pro uložení výsledného souboru: "
                                                     f"{directory_path.name!s}",
                                               text_color="green")
@@ -129,22 +133,24 @@ class Dotacovatko(CTk):
         Starts the background processes inside a thread to ensure the UI stays responsive.
         :return: None.
         """
-        self._start_widgets[1].configure(text="")
+        self.__start_widgets[1].configure(text="")
 
-        self._progress_bar.grid(row=self._start_widgets[1].grid_info()["row"],
-                                column=self._start_widgets[1].grid_info()["column"])
-        self._progress_bar.start()
+        self.__progress_bar.grid(row=self.__start_widgets[1].grid_info()["row"],
+                                 column=self.__start_widgets[1].grid_info()["column"])
+        self.__progress_bar.start()
 
-        input_path: Path | None = self._excel_processor.file_path
-        output_dir: Path | None = self._excel_processor.output_directory
-
-        self._bg_process = multiprocessing.Process(
+        self.__bg_process = multiprocessing.Process(
             target=Dotacovatko.run_background_processing,
-            args=(self._queue, input_path, output_dir),
+            args=(
+                self.__outbound_queue,
+                self.__inbound_queue,
+                self.__input_file,
+                self.__output_dir,
+            ),
             daemon=True,
         )
 
-        self._bg_process.start()
+        self.__bg_process.start()
 
         self._check_queue()
 
@@ -156,12 +162,24 @@ class Dotacovatko(CTk):
         :return: None.
         """
         try:
-            status, message = self._queue.get_nowait()
+            message = self.__outbound_queue.get_nowait()
 
-            if status == "success":
-                self.__handle_success()
-            else:
-                self.__handle_failure(ErrNoEnum.INTERNAL_ERROR, message)
+            match message.__class__.__name__:
+                case QueueMessages.__name__:
+                    if message == QueueMessages.SUCCESS:
+                        self.__handle_success()
+
+                case AppError.__name__:
+                    self.__handle_failure(message)
+
+                case _:
+                    self.__handle_failure(
+                        error=AppError(
+                            error_code=ErrNoEnum.ERR_UNKNOWN_QUEUE_MESSAGE,
+                            error_message="Vnitřní chyba programu, zkuste to prosím znovu.",
+                        ),
+                    )
+
         except Empty:
             self.after(100, self._check_queue)
 
@@ -171,54 +189,66 @@ class Dotacovatko(CTk):
         Method used to have the UI react to a successful.
         :return: None.
         """
-        self._progress_bar.stop()
-        self._progress_bar.grid_forget()
-        self._start_widgets[1].configure(text="Data úspěšně zpracována", text_color="green")
+        self.__progress_bar.stop()
+        self.__progress_bar.grid_forget()
+        self.__start_widgets[1].configure(text="Data úspěšně zpracována", text_color="green")
         SuccessHandler()
 
-    def __handle_failure(self, error_code: ErrNoEnum, error_msg: str) -> None:
-        self._progress_bar.stop()
-        self._progress_bar.grid_forget()
-        ErrorHandler(error_code=error_code, error_message=error_msg)
-        self._start_widgets[1].configure(text=error_msg, text_color="red")
+    def __handle_failure(self,
+                         error: AppError) -> None:
+        self.__progress_bar.stop()
+        self.__progress_bar.grid_forget()
+        ErrorHandler(error_code=error.error_code, error_message=error.error_message)
+        self.__start_widgets[1].configure(text=error.error_message, text_color="red")
 
     @staticmethod
-    def run_background_processing(queue: multiprocessing.Queue,
+    def run_background_processing(inbound_queue: multiprocessing.Queue[AppError | float | QueueMessages],
+                                  outbound_queue: multiprocessing.Queue[QueueMessages],
                                   input_path: Path,
                                   output_dir: Path) -> None:
         """Run the background processing process.
 
         Manages multiprocessing invocation of the ExcelProcessor class and puts it to work
         analysing the Excel data.
-        :param queue: Multiprocessing queue for communicating with the GUI.
+        :param inbound_queue: Multiprocessing queue for receiving messages from the GUI.
+        :param outbound_queue: Multiprocessing queue for sending messages to the GUI.
         :param input_path: Path to the input file to be passed to the ExcelProcessor.
         :param output_dir: Output directory to be passed to the ExcelProcessor.
         :return: None.
         """
         try:
-            processor = ExcelProcessor()
-            processor.set_input(input_path)
-            processor.set_output_directory(output_dir)
+            processor = ExcelProcessor(
+                inbound_queue=outbound_queue,
+                outbound_queue=inbound_queue,
+                input_path=input_path,
+                output_directory=output_dir,
+            )
 
-            processor.load_template()
+            processor.run()
 
-            processor.load_data()
-
-            if not processor.process_input_data():
-                queue.put(("error", "Chyba během zpracování dat."))
-                return
-
-            queue.put(("success", "done"))
+            outbound_queue.put(QueueMessages.SUCCESS)
 
         except AppError as e:
-            print("AppError", e)
-            queue.put(("error", (e.error_code, e.error_message)))
+            inbound_queue.put(e)
 
-        #except Exception as e:
-        #    print("exception", e)
-        #    queue.put(("error", str(e)))
+        except Exception:
+            inbound_queue.put(
+                AppError(
+                    error_code=ErrNoEnum.INTERNAL_ERROR,
+                    error_message="Neznámá chyba, zkontrolujte vstupní soubor a zkuste to prosím znovu.",
+                ),
+            )
 
-if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    app = Dotacovatko()
-    app.mainloop()
+    def _send_msg(self,
+                  message: QueueMessages) -> None:
+        """Send a message to the service running in the background."""
+        self.__outbound_queue.put(message)
+
+    def __stop_processing(self) -> None:
+        """Interrupt the background processes and end them when the app is closed.
+
+        :return: None.
+        """
+        self._send_msg(QueueMessages.INTERRUPT)
+
+        self.destroy()

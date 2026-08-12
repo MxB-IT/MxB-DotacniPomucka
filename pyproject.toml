@@ -5,13 +5,39 @@ description = "A tool to help create tables for the ministry of internal affairs
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "pydantic~=2.12.5"
+    "annotated-types==0.8.0",
+    "certifi==2026.7.22",
+    "charset-normalizer==3.4.9",
+    "customtkinter==6.0.0",
+    "darkdetect==0.8.0",
+    "et-xmlfile==2.0.0",
+    "idna==3.18",
+    "librt==0.15.0",
+    "mypy==2.3.0",
+    "mypy-extensions==1.1.0",
+    "numpy==2.5.2",
+    "openpyxl==3.1.5",
+    "packaging==26.3",
+    "pandas==3.0.5",
+    "pandas-stubs>=3.0.5.260730",
+    "pathspec==1.1.1",
+    "pydantic==2.13.4",
+    "pydantic-core==2.46.4",
+    "python-dateutil==2.9.0.post0",
+    "pywin32==312",
+    "requests==2.34.2",
+    "ruff==0.16.2",
+    "six==1.17.0",
+    "tk==0.1.0",
+    "typing-extensions==4.16.0",
+    "typing-inspection==0.4.3",
+    "tzdata==2026.3",
+    "urllib3==2.7.0",
+    "xlwings==0.36.14",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy~=1.20.0",
-    "ruff~=0.15.10"
 ]
 
 [tool.mypy]
@@ -48,4 +74,4 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
-docstring-code-line-length = 79
+docstring-code-line-length = 120
