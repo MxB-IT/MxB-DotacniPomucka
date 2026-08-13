@@ -23,8 +23,22 @@ class ServiceBase(metaclass=ABCMeta):
         :param outbound_queue: Multiprocessing queue used to send outbound messages to the GUI.
         """
         self.__inbound_queue: mp.Queue[QueueMessages] = inbound_queue
+        """
+        Attribute used to hold the inbound queue, which receives messages from the GUI.
+        :meta private:
+        """
+
         self.__outbound_queue: mp.Queue[QueueMessages | AppError | float] = outbound_queue
+        """
+        Attribute used to hold the outbound queue, which is used to send messages to the GUI.
+        :meta private:
+        """
+
         self._stop_event: threading.Event = threading.Event()
+        """
+        Attribute used to store the event that when flipped stops the underlying service.
+        :meta protected:
+        """
 
         __queue_listener: threading.Thread = threading.Thread(
             target=self._queue_listener,

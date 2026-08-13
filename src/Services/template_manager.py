@@ -40,10 +40,36 @@ class TemplateManager:
         :return: None.
         """
         self.__url: str = template_url
+        """
+        Attribute used to hold the url leading to the template, I know an API would be better, there appears to be
+        no API provided by our ministry.
+        :meta private:
+        """
+
         self.__app_name: Path = Path("Dotacovatko")
+        """
+        App name to display in the GUI.
+        :meta private:
+        """
+
         self.__path: Path = self.__get_writable_path()
+        """
+        Attribute used to store the template prior to working with it (it's very particular and you have to be careful
+        and specific with it).
+        :meta private:
+        """
+
         self.__template: openpyxl.Workbook
+        """
+        Attribute used to store the template workbook for further preprocessing.
+        :meta private:
+        """
+
         self.__col_mapping: dict[tuple[str, tuple[str, ...]], int] = {}
+        """
+        Attribute used to store the column map used later on by the template manager during writing.
+        :meta private:
+        """
 
     def __get_writable_path(self) -> Path:
         """Check for where to download the template.
@@ -242,7 +268,7 @@ class TemplateManager:
         :param sheet_name: sheet for which the column map is to be built
         :param headers: headers of the columns to be found
         :param max_row: maximum row to search for headers
-        :return:
+        :return: None.
         """
         temp: Workbook = openpyxl.load_workbook(filename=self.__path, data_only=True)
         ws = temp[sheet_name]

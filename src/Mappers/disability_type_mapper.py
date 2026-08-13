@@ -16,6 +16,10 @@ class DisabilityTypeMapper:
         4: DisabilityStatus.OZP12,
         5: DisabilityStatus.OZZ,
     })
+    """
+    Mapping attribute containing the mapping of ints to the disability enum.
+    :meta protected:
+    """
 
     @classmethod
     def from_int(cls, value: int) -> DisabilityStatus:

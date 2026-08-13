@@ -46,14 +46,56 @@ class ExcelProcessor(ServiceBase):
             inbound_queue=inbound_queue,
             outbound_queue=outbound_queue,
         )
+
         self.__file_path: Path = input_path
+        """
+        Path leading to the input file, used to open the file and load data from it.
+        :meta private:
+        """
+
         self.__output_directory: Path = output_directory
+        """
+        Path leading to the output directory, used to write the result of the operation.
+        :meta private:
+        """
+
         self.__data: pd.ExcelFile
+        """
+        Attribute used to store the loaded data inside the object.
+        :meta private:
+        """
+
         self.__template_manager: TemplateManager
+        """
+        Attribute used to hold the reference to the template manager object, used to work with the downloaded template
+        that this software is supposed to fill in.
+        :meta private:
+        """
+
         self.__employee_data: pd.DataFrame
+        """
+        Attribute used to hold the DataFrame with the unified and sorted employee data.
+        :meta private:
+        """
+
         self.__data_months: dict[str, pd.DataFrame | None] = {}
+        """
+        Attribute used to hold DataFrames with data from the month sheets, containing information about employee
+        payrolls.
+        :meta private:
+        """
+
         self.__year: int
+        """
+        Attribute used to determine the year of the processed report.
+        :meta private:
+        """
+
         self.__quarter: int
+        """
+        Attribute used to determine the month of the processed report.
+        :meta private:
+        """
 
     def run(self) -> None:
         """Run the service.

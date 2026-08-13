@@ -15,5 +15,15 @@ class AppError(Exception):
         :return: None.
         """
         self.error_code: ErrNoEnum = error_code
+        """
+        Error code of the error being raised, provided by the ErrNoEnum.
+        :meta public:
+        """
+
         self.error_message: str = error_message
+        """
+        Error message to display to the user in relation to the displayed error.
+        :meta public:
+        """
+
         super().__init__(f"[{error_code.name}] {error_message}")

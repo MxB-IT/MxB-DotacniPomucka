@@ -22,6 +22,10 @@ class IntMonthMapper:
         11: MonthEnum.NOV,
         12: MonthEnum.DEC,
     })
+    """
+    Mapping attribute containing the mapping of ints to the MonthEnum.
+    :meta protected:
+    """
 
     @classmethod
     def from_int(cls, value: int) -> MonthEnum:

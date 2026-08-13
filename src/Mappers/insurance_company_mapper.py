@@ -25,6 +25,10 @@ class InsuranceCompanyMapper:
         "RBP, zdravotní pojišťovna": 213,
         "Revírní bratrská pokladna, zdravotní pojišťovna": 213,
     })
+    """
+    Mapping attribute containing the mapping of strings to insurance company numbers, as assigned in CZE.
+    :meta protected:
+    """
 
     @classmethod
     def from_str(cls, value: str) -> int:
