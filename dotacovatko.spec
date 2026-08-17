@@ -5,7 +5,7 @@ block_cipher = None
 sep = ";"
 
 a = Analysis(
-    ["./src/Dotacovatko.py"],
+    ["./src/Dotacovatko/Dotacovatko.py"],
     pathex=["src"],
     binaries=[],
     datas=[],
