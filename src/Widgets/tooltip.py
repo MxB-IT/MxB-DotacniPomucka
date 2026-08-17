@@ -14,7 +14,7 @@ class Tooltip:
     def __init__(self,
                  widget: Any,
                  text: str,
-                 delay: int = 500):
+                 delay: int = 500) -> None:
         """Initialise the tooltip.
 
         Initialises the tooltip with the given text and delay for when to disappear.
@@ -25,7 +25,7 @@ class Tooltip:
         self._widget = widget
         self._text = text
         self._delay = delay
-        self._tooltip_window = None
+        self._tooltip_window: CTkToplevel | None = None
         self._id = None
 
         self._widget.bind("<Enter>", self._schedule_tooltip)
@@ -64,7 +64,7 @@ class Tooltip:
             corner_radius=6,
             font=("Arial", 12),
             padx=10,
-            pady=5
+            pady=5,
         )
 
         label.pack()

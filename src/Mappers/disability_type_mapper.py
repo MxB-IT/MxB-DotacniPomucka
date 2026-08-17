@@ -1,9 +1,9 @@
 """Defines the mapper used to map a number to a disability type."""
 from types import MappingProxyType
 
-from src.Enums import ErrNoEnum
-from src.Enums.disability_status_enum import DisabilityStatus
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum
+from Enums.disability_status_enum import DisabilityStatus
+from Utils.app_error import AppError
 
 
 class DisabilityTypeMapper:
@@ -16,6 +16,10 @@ class DisabilityTypeMapper:
         4: DisabilityStatus.OZP12,
         5: DisabilityStatus.OZZ,
     })
+    """
+    Mapping attribute containing the mapping of ints to the disability enum.
+    :meta protected:
+    """
 
     @classmethod
     def from_int(cls, value: int) -> DisabilityStatus:

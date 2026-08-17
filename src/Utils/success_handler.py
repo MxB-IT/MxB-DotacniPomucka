@@ -4,7 +4,7 @@ from typing import Any
 
 from customtkinter import CTkToplevel
 
-from src.Widgets import ButtonBase, FrameBase, LabelBase
+from Widgets import ButtonBase, FrameBase, LabelBase
 
 
 class SuccessHandler(CTkToplevel):
@@ -19,18 +19,37 @@ class SuccessHandler(CTkToplevel):
         super().__init__()
         self.title("Úspěch!")
         self.frame: FrameBase = FrameBase(master=self)
+        """
+        Frame used to encompass all the content inside the success GUI window.
+        :meta public:
+        """
+
         self.frame.pack(fill=BOTH,
                         expand=True)
 
         self.widgets: list[Any] = []
+        """
+        List of all widgets contained within the success GUI window.
+        :meta public:
+        """
 
         self.label: LabelBase = LabelBase(master=self.frame,
                                text="Excel soubor úspěšně zpracován")
+        """
+        Label used to display a cheerful success message to the user.
+        :meta public:
+        """
+
         self.widgets.append(self.label)
 
         self.button: ButtonBase = ButtonBase(master=self.frame,
                                  command=self.destroy,
                                  text="OK")
+        """
+        Button used to close the success window on being pressed.
+        :meta public:
+        """
+
         self.widgets.append(self.button)
 
         for widget in self.widgets:

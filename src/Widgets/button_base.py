@@ -3,7 +3,7 @@ from typing import Any
 
 from customtkinter import CTkButton
 
-from src.Enums import ColourEnum
+from Enums import ColourEnum
 
 
 class ButtonBase(CTkButton):

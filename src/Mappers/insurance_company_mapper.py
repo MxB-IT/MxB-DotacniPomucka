@@ -1,8 +1,8 @@
 """Defines the mapper for translating insurance company names to their numbers."""
 from types import MappingProxyType
 
-from src.Enums import ErrNoEnum
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum
+from Utils.app_error import AppError
 
 
 class InsuranceCompanyMapper:
@@ -25,6 +25,10 @@ class InsuranceCompanyMapper:
         "RBP, zdravotní pojišťovna": 213,
         "Revírní bratrská pokladna, zdravotní pojišťovna": 213,
     })
+    """
+    Mapping attribute containing the mapping of strings to insurance company numbers, as assigned in CZE.
+    :meta protected:
+    """
 
     @classmethod
     def from_str(cls, value: str) -> int:
