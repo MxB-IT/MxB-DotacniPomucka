@@ -5,7 +5,7 @@ block_cipher = None
 sep = ";"
 
 a = Analysis(
-    ["./src/Dotacovatko/Dotacovatko.py"],
+    ["main.py"],
     pathex=["src"],
     binaries=[],
     datas=[],
@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="Dotacovatko",
+    name="Dotacni_pomucka",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
