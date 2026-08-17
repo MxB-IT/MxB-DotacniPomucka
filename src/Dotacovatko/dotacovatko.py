@@ -30,13 +30,25 @@ class Dotacovatko(CTk):
         self.title("Dotační můstek")
 
         self.__frame: FrameBase = FrameBase(master=self)
+        """
+        The frame used to contain and arrange all the app's widgets.
+        :meta-private:
+        """
 
         self.__frame.pack(fill="both", expand=True)
 
         self.__progress_bar: ProgressBarBase = ProgressBarBase(master=self.__frame,
                                                                mode="indeterminate")
+        """
+        The progressbar widget rendered upon starting the app's background processing.
+        :meta-private:
+        """
 
         self.__widgets: list[Any] = []
+        """
+        List containing all the GUI widgets.
+        :meta-private:
+        """
 
         self.__input_widgets = (ButtonBase(master=self.__frame,
                                            command=self._open_input,
@@ -44,6 +56,11 @@ class Dotacovatko(CTk):
                                 LabelBase(master=self.__frame,
                                          text="Nebyla načtena žádná vstupní tabulka",
                                          text_color="red"))
+        """
+        Widgets needed for the user to provide input to the app, namely a button and a label for the user.
+        :meta-private:
+        """
+
         self.__widgets.append(self.__input_widgets)
 
         self._output_widgets = (ButtonBase(master=self.__frame,
@@ -53,6 +70,11 @@ class Dotacovatko(CTk):
                                           text=f"Složka pro uložení výsledného souboru: "
                                                f"{Path.cwd().name!s}",
                                           text_color="green"))
+        """
+        Widgets needed to communicate the state of the processing once it has finished.
+        :meta-private:
+        """
+
         self.__widgets.append(self._output_widgets)
 
         self.__start_widgets = (ButtonBase(master=self.__frame,
@@ -60,15 +82,43 @@ class Dotacovatko(CTk):
                                            text="Start"),
                                 LabelBase(master=self.__frame,
                                          text=""))
+        """
+        Widgets needed to allow the user to start the background processing once they have selected all inputs.
+        :meta-private:
+        """
         self.__widgets.append(self.__start_widgets)
 
         self.__arrange_widgets()
 
         self.__outbound_queue: multiprocessing.Queue[AppError | float | QueueMessages] = multiprocessing.Queue()
+        """
+        Queue used to send messages to the background process.
+        :meta-private:
+        """
+
         self.__inbound_queue: multiprocessing.Queue[QueueMessages] = multiprocessing.Queue()
+        """
+        Queue uset to receive messages from the background process.
+        :meta-private:
+        """
+
         self.__bg_process: multiprocessing.Process
+        """
+        Attribute used to hold a reference to the background process.
+        :meta-private:
+        """
+
         self.__input_file: Path
+        """
+        The file to be used as the script's input.
+        :meta-private:
+        """
+
         self.__output_dir: Path
+        """
+        The directory into which the output produced by the background process should be saved.
+        :meta-private
+        """
 
         self.protocol("WM_DELETE_WINDOW", self.__stop_processing)
 
