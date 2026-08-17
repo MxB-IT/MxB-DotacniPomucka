@@ -8,7 +8,7 @@ from typing import Any
 from customtkinter import CTk  # type: ignore[import-untyped]
 
 from Enums import ErrNoEnum
-from Enums.queue_status import QueueMessages
+from Enums.queue_status import QueueStatus
 from Services import ExcelProcessor
 from Utils import ErrorHandler, SuccessHandler
 from Utils.app_error import AppError
@@ -90,13 +90,13 @@ class Dotacovatko(CTk):
 
         self.__arrange_widgets()
 
-        self.__outbound_queue: multiprocessing.Queue[AppError | float | QueueMessages] = multiprocessing.Queue()
+        self.__outbound_queue: multiprocessing.Queue[AppError | float | QueueStatus] = multiprocessing.Queue()
         """
         Queue used to send messages to the background process.
         :meta-private:
         """
 
-        self.__inbound_queue: multiprocessing.Queue[QueueMessages] = multiprocessing.Queue()
+        self.__inbound_queue: multiprocessing.Queue[QueueStatus] = multiprocessing.Queue()
         """
         Queue uset to receive messages from the background process.
         :meta-private:
@@ -215,8 +215,8 @@ class Dotacovatko(CTk):
             message = self.__outbound_queue.get_nowait()
 
             match message.__class__.__name__:
-                case QueueMessages.__name__:
-                    if message == QueueMessages.SUCCESS:
+                case QueueStatus.__name__:
+                    if message == QueueStatus.SUCCESS:
                         self.__handle_success()
 
                 case AppError.__name__:
@@ -252,8 +252,8 @@ class Dotacovatko(CTk):
         self.__start_widgets[1].configure(text=error.error_message, text_color="red")
 
     @staticmethod
-    def run_background_processing(inbound_queue: multiprocessing.Queue[AppError | float | QueueMessages],
-                                  outbound_queue: multiprocessing.Queue[QueueMessages],
+    def run_background_processing(inbound_queue: multiprocessing.Queue[AppError | float | QueueStatus],
+                                  outbound_queue: multiprocessing.Queue[QueueStatus],
                                   input_path: Path,
                                   output_dir: Path) -> None:
         """Run the background processing process.
@@ -276,7 +276,7 @@ class Dotacovatko(CTk):
 
             processor.run()
 
-            outbound_queue.put(QueueMessages.SUCCESS)
+            outbound_queue.put(QueueStatus.SUCCESS)
 
         except AppError as e:
             inbound_queue.put(e)
@@ -290,7 +290,7 @@ class Dotacovatko(CTk):
             )
 
     def _send_msg(self,
-                  message: QueueMessages) -> None:
+                  message: QueueStatus) -> None:
         """Send a message to the service running in the background."""
         self.__outbound_queue.put(message)
 
@@ -299,6 +299,6 @@ class Dotacovatko(CTk):
 
         :return: None.
         """
-        self._send_msg(QueueMessages.INTERRUPT)
+        self._send_msg(QueueStatus.INTERRUPT)
 
         self.destroy()

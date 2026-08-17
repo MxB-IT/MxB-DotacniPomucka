@@ -11,11 +11,11 @@ from Enums import MonthEnum
 from Enums.employee_data_headers import EmployeeDataHeaders
 from Enums.employee_input_headers import EmployeeSheetHeaders
 from Enums.err_no_enum import ErrNoEnum
-from Enums.human_resources_headers_enum import HumanResourcesHeaders
-from Enums.month_headers_enum import MonthHeaders
-from Enums.quarter_enum import Quarters
-from Enums.queue_status import QueueMessages
-from Enums.template_sheet_names_enum import TemplateSheetNames
+from Enums.human_resources_headers import HumanResourcesHeaders
+from Enums.month_headers import MonthHeaders
+from Enums.quarters import Quarters
+from Enums.queue_status import QueueStatus
+from Enums.template_sheet_names import TemplateSheetNames
 from Mappers.disability_type_mapper import DisabilityTypeMapper
 from Mappers.insurance_company_mapper import InsuranceCompanyMapper
 from Services.service_base import ServiceBase
@@ -28,8 +28,8 @@ class ExcelProcessor(ServiceBase):
     """Class made for handling loading and processing the Excel files."""
 
     def __init__(self,
-                 inbound_queue: mp.Queue[QueueMessages],
-                 outbound_queue: mp.Queue[QueueMessages | AppError | float],
+                 inbound_queue: mp.Queue[QueueStatus],
+                 outbound_queue: mp.Queue[QueueStatus | AppError | float],
                  input_path: Path,
                  output_directory: Path,
                  ) -> None:
@@ -325,7 +325,7 @@ class ExcelProcessor(ServiceBase):
             row += 1
 
         self.__save_processed(f"{self.__quarter}Q{self.__year}seznam+zaměstnanců+OZP.xlsx")
-        self._send_msg(QueueMessages.SUCCESS)
+        self._send_msg(QueueStatus.SUCCESS)
 
     def __process_employee_data(self) -> None:
         """Process employee data and create Employee objects representing them.
