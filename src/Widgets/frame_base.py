@@ -4,7 +4,7 @@ from typing import Any
 
 from customtkinter import CTkFrame, CTkToplevel
 
-from src.Enums import ColourEnum
+from Enums import ColourEnum
 
 
 class FrameBase(CTkFrame):

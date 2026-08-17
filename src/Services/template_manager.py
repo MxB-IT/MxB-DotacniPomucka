@@ -18,10 +18,10 @@ from openpyxl.cell import Cell, MergedCell
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from src.Enums.disability_status_enum import DisabilityStatus
-from src.Enums.err_no_enum import ErrNoEnum
-from src.Utils.app_error import AppError
-from src.Utils.error_handler import ErrorHandler
+from Enums.disability_status_enum import DisabilityStatus
+from Enums.err_no_enum import ErrNoEnum
+from Utils.app_error import AppError
+from Utils.error_handler import ErrorHandler
 
 
 class TemplateManager:
@@ -40,10 +40,36 @@ class TemplateManager:
         :return: None.
         """
         self.__url: str = template_url
+        """
+        Attribute used to hold the url leading to the template, I know an API would be better, there appears to be
+        no API provided by our ministry.
+        :meta private:
+        """
+
         self.__app_name: Path = Path("Dotacovatko")
-        self.path: Path = self.__get_writable_path()
-        self.template: openpyxl.Workbook | None = None
+        """
+        App name to display in the GUI.
+        :meta private:
+        """
+
+        self.__path: Path = self.__get_writable_path()
+        """
+        Attribute used to store the template prior to working with it (it's very particular and you have to be careful
+        and specific with it).
+        :meta private:
+        """
+
+        self.__template: openpyxl.Workbook
+        """
+        Attribute used to store the template workbook for further preprocessing.
+        :meta private:
+        """
+
         self.__col_mapping: dict[tuple[str, tuple[str, ...]], int] = {}
+        """
+        Attribute used to store the column map used later on by the template manager during writing.
+        :meta private:
+        """
 
     def __get_writable_path(self) -> Path:
         """Check for where to download the template.
@@ -79,7 +105,7 @@ class TemplateManager:
         Checks whether the template has already been downloaded
         :return: True if it has already been downloaded, False otherwise
         """
-        return self.path.exists()
+        return self.__path.exists()
 
     def download_template(self) -> bool:
         """Attempt to download the template.
@@ -95,7 +121,7 @@ class TemplateManager:
             response = requests.get(self.__url, timeout=5)
             response.raise_for_status()
 
-            with self.path.open("wb") as file:
+            with self.__path.open("wb") as file:
                 file.write(response.content)
 
             return self.__scrub_template()
@@ -125,7 +151,7 @@ class TemplateManager:
 
     def __scrub_template(self) -> bool:
         try:
-            with self.path.open("rb") as f:
+            with self.__path.open("rb") as f:
                 original_data = f.read()
 
             in_buffer = io.BytesIO(original_data)
@@ -148,7 +174,7 @@ class TemplateManager:
 
             final_bytes = out_buffer.getvalue()
 
-            with self.path.open("wb") as f:
+            with self.__path.open("wb") as f:
                 f.write(final_bytes)
 
         except Exception:
@@ -174,7 +200,8 @@ class TemplateManager:
         :return: boolean representing the success or failure of the write
         """
         try:
-            sheet = self.template[sheet_name]
+            sheet = self.__template[sheet_name]
+            lookup_header: tuple[str, ...]
 
             if col_header:
                 if isinstance(col_header, (str, Enum)):
@@ -203,12 +230,9 @@ class TemplateManager:
         :param destination: Path representation of the folder to write into
         :return: bool, indicating success or failure of the write
         """
-        if self.template is None:
-            return False
-
         try:
             destination.parent.mkdir(parents=True, exist_ok=True)
-            self.template.save(destination)
+            self.__template.save(destination)
 
         except (PermissionError, OSError):
             ErrorHandler(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,
@@ -225,8 +249,8 @@ class TemplateManager:
         :return: bool indicating success or failure of the load
         """
         try:
-            self.template = openpyxl.load_workbook(filename=self.path,
-                                                   data_only=False)
+            self.__template = openpyxl.load_workbook(filename=self.__path,
+                                                     data_only=False)
 
         except Exception:
             return False
@@ -244,9 +268,9 @@ class TemplateManager:
         :param sheet_name: sheet for which the column map is to be built
         :param headers: headers of the columns to be found
         :param max_row: maximum row to search for headers
-        :return:
+        :return: None.
         """
-        temp: Workbook = openpyxl.load_workbook(filename=self.path,data_only=True)
+        temp: Workbook = openpyxl.load_workbook(filename=self.__path, data_only=True)
         ws = temp[sheet_name]
 
         for header in headers:
@@ -265,7 +289,7 @@ class TemplateManager:
 
     def __find_column_by_header(self,
                                 ws: Worksheet,
-                                header: str | tuple | Enum,
+                                header: str | tuple[str, ...] | Enum,
                                 max_row: int) -> int | None:
         """Find a column based on its header and return that columns number.
 
@@ -274,10 +298,14 @@ class TemplateManager:
         :param header: header to look out for
         :return: int if it finds the column successfully, None otherwise
         """
+        search_terms: tuple[str, ...]
+
         if isinstance(header, Enum):
             search_terms = (str(header.value).strip(),)
+
         elif isinstance(header, str):
             search_terms = (header.strip(),)
+
         else:
             search_terms = tuple(str(item).strip() for item in header)
 
@@ -306,19 +334,19 @@ class TemplateManager:
         try:
             pythoncom.CoInitialize()
 
-            self.template.save(self.path)
+            self.__template.save(self.__path)
 
-            if hasattr(self.template, "close"):
-                self.template.close()
+            if hasattr(self.__template, "close"):
+                self.__template.close()
 
             with xw.App(visible=False) as app:
-                book = xw.Book(self.path)
+                book = xw.Book(self.__path)
                 app.calculate()
                 book.save()
                 book.close()
 
-            self.template = openpyxl.load_workbook(self.path,
-                                                   data_only=False)
+            self.__template = openpyxl.load_workbook(self.__path,
+                                                     data_only=False)
 
         except (PermissionError, OSError) as e:
             raise AppError(error_code=ErrNoEnum.ERR_WORKING_WITH_EXCEL,

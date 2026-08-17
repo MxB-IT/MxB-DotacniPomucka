@@ -4,7 +4,7 @@ from typing import Any
 
 from customtkinter import CTkToplevel
 
-from src.Widgets import ButtonBase, FrameBase, LabelBase
+from Widgets import ButtonBase, FrameBase, LabelBase
 
 
 class ErrorHandler(CTkToplevel):
@@ -27,16 +27,36 @@ class ErrorHandler(CTkToplevel):
                          **kwargs)
         self.title("ERROR")
         self.frame: FrameBase = FrameBase(master=self)
+        """
+        Frame used to contain all the GUI elements of the error window.
+        :meta public:
+        """
+
         self.frame.pack(fill=BOTH,
                         expand=True)
         self.widgets: list[Any] = []
+        """
+        List of all widgets present in the GUI window.
+        :meta public:
+        """
+
         self.error_message: LabelBase = LabelBase(master=self.frame,
                                        text=f"ERROR {error_code}: {error_message}")
+        """
+        Label containing the error message from the caught error.
+        :meta public:
+        """
+
         self.widgets.append(self.error_message)
 
         self.done_button: ButtonBase = ButtonBase(master=self.frame,
                                       text="OK",
                                       command=self.destroy)
+        """
+        Button used to destroy the error window on being pressed.
+        :meta public:
+        """
+
         self.widgets.append(self.done_button)
 
         for widget in self.widgets:

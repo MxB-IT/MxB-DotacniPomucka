@@ -1,8 +1,8 @@
 """Defines a mapper that maps numbers to month enum values."""
 from types import MappingProxyType
 
-from src.Enums import ErrNoEnum, MonthEnum
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum, MonthEnum
+from Utils.app_error import AppError
 
 
 class IntMonthMapper:
@@ -22,6 +22,10 @@ class IntMonthMapper:
         11: MonthEnum.NOV,
         12: MonthEnum.DEC,
     })
+    """
+    Mapping attribute containing the mapping of ints to the MonthEnum.
+    :meta protected:
+    """
 
     @classmethod
     def from_int(cls, value: int) -> MonthEnum:
