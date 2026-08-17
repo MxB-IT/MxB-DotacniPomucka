@@ -44,6 +44,10 @@ class ServiceBase(metaclass=ABCMeta):
             target=self._queue_listener,
             daemon=True,
         )
+        """
+        Attribute storing the queue listener used to query the multiprocessing queue for new messages.
+        :meta private:
+        """
 
     def _queue_listener(self) -> None:
         """Listen to the queue for any incoming messages, passing them over as they arrive.
