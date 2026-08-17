@@ -1,7 +1,7 @@
 """Defines a main function used as the entrypoint for the app."""
 import multiprocessing
 
-from dotacovatko import Dotacovatko
+from Dotacovatko.dotacovatko import Dotacovatko
 
 
 def main() -> None:

@@ -1,8 +1,8 @@
 """Defines a mapper that maps numbers to month enum values."""
 from types import MappingProxyType
 
-from src.Enums import ErrNoEnum, MonthEnum
-from src.Utils.app_error import AppError
+from Enums import ErrNoEnum, MonthEnum
+from Utils.app_error import AppError
 
 
 class IntMonthMapper:
