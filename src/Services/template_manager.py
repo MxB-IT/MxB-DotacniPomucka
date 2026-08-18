@@ -150,6 +150,12 @@ class TemplateManager:
             return False
 
     def __scrub_template(self) -> bool:
+        """Sanitise the template of all broken references before opening.
+
+        Ensures that the template itself is fully scrubbed before performing operations on it, since the template
+        contains an error by default (at least it used to in 08/2026). Excel ignores this error, openpyxl does not.
+        :return: bool indicating success or failure.
+        """
         try:
             with self.__path.open("rb") as f:
                 original_data = f.read()
