@@ -9,7 +9,8 @@ government support claims. ExcelWings is also utilised to perform dark Excel mag
 meaning it contains embedded macros that pandas cannot force to run.
 
 The documentation for this project may be generated via mounting the docs directory and running `make html` on Unix
-based systems or running `make.bat html` on Windows machines.
+based systems or running `make.bat html` on Windows machines. You may then navigate to the `_build/html` subdirectory
+and open the `index.html` file, which will contain all the documentation for this project.
 
 ## Project goals
 

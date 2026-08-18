@@ -55,10 +55,10 @@ Enums.err\_no\_enum module
    :show-inheritance:
    :undoc-members:
 
-Enums.human\_resources\_headers\_enum module
---------------------------------------------
+Enums.human\_resources\_headers module
+--------------------------------------
 
-.. automodule:: Enums.human_resources_headers_enum
+.. automodule:: Enums.human_resources_headers
    :members:
    :private-members:
    :show-inheritance:
@@ -73,19 +73,19 @@ Enums.month\_enum module
    :show-inheritance:
    :undoc-members:
 
-Enums.month\_headers\_enum module
----------------------------------
+Enums.month\_headers module
+---------------------------
 
-.. automodule:: Enums.month_headers_enum
+.. automodule:: Enums.month_headers
    :members:
    :private-members:
    :show-inheritance:
    :undoc-members:
 
-Enums.quarter\_enum module
---------------------------
+Enums.quarters module
+---------------------
 
-.. automodule:: Enums.quarter_enum
+.. automodule:: Enums.quarters
    :members:
    :private-members:
    :show-inheritance:
@@ -100,10 +100,10 @@ Enums.queue\_status module
    :show-inheritance:
    :undoc-members:
 
-Enums.template\_sheet\_names\_enum module
------------------------------------------
+Enums.template\_sheet\_names module
+-----------------------------------
 
-.. automodule:: Enums.template_sheet_names_enum
+.. automodule:: Enums.template_sheet_names
    :members:
    :private-members:
    :show-inheritance:
